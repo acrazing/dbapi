@@ -17,11 +17,15 @@ class BaseAPI(object):
     def ck(self):
         return self._cookies.get('ck', '')
 
-    def _json(self, url, method='get', params=None, data=None):
+    def _req(self, url, method='get', params=None, data=None):
         r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
+        print('[api] %s: %s' % (method, r.url))
+        return r
+
+    def _json(self, url, method='get', params=None, data=None):
+        r = self._req(url, method, params, data)
         return r.json()
 
     def _xml(self, url, method='get', params=None, data=None):
-        print('[xml] %s: %s' % (method, url))
-        r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
-        return html.fromstring(r.text, url)
+        r = self._req(url, method, params, data)
+        return html.fromstring(r.text, r.url)

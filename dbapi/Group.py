@@ -6,15 +6,20 @@
 # File: Group.
 import re
 import traceback
+from html import unescape
+
+from lxml import etree
 
 from dbapi.BaseAPI import BaseAPI
 from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUPS, API_GROUP_GROUP_HOME, \
     API_GROUP_SEARCH_TOPICS, API_GROUP_HOME, API_GROUP_LIST_GROUP_TOPICS, API_GROUP_LIST_USER_PUBLISHED_TOPICS, \
-    API_GROUP_LIST_USER_COMMENTED_TOPICS, API_GROUP_LIST_USER_LIKED_TOPICS, API_GROUP_LIST_USER_RECED_TOPICS
+    API_GROUP_LIST_USER_COMMENTED_TOPICS, API_GROUP_LIST_USER_LIKED_TOPICS, API_GROUP_LIST_USER_RECED_TOPICS, \
+    API_GROUP_ADD_TOPIC, API_GROUP_REMOVE_COMMENT, API_GROUP_GET_TOPIC, API_GROUP_REMOVE_TOPIC, API_GROUP_UPDATE_TOPIC, \
+    API_GROUP_ADD_COMMENT, API_GROUP_ADMIN_REMOVE_COMMENT
 from dbapi.utils import slash_right, build_list_result
 
 
-def _parse_topic_table(xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
+def parse_topic_table(xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
     xml_results = xml.xpath(selector)
     results = []
     tds = tds.split(',')
@@ -69,14 +74,6 @@ def _parse_topic_table(xml, tds='title,created,comment,group', selector='//table
     return results
 
 
-def _parse_total(xml):
-    try:
-        count = xml.xpath('//div[@class="paginator"]/span[@class="count"]/text()')[0]
-        return int(re.search(r'\d+', count).group())
-    except:
-        return 0
-
-
 class Group(BaseAPI):
     # 创建小组
     def add_group(self, **kwargs):
@@ -104,7 +101,7 @@ class Group(BaseAPI):
                 results.append(meta)
             except Exception as e:
                 print('parse result error: %s' % e, traceback.print_exc())
-        return build_list_result(results, _parse_total(xml))
+        return build_list_result(results, xml)
 
     # 加入的小组列表，所有人
     def list_joined_groups(self, user_alias=None):
@@ -172,7 +169,7 @@ class Group(BaseAPI):
     # 搜索话题
     def search_topics(self, keyword, sort='relevance', start=0):
         xml = self._xml(API_GROUP_SEARCH_TOPICS % (start, sort, keyword))
-        return build_list_result(_parse_topic_table(xml), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml), xml)
 
     # 小组内的话题，所有人
     def list_topics(self, group_alias, _type='', start=0):
@@ -180,73 +177,137 @@ class Group(BaseAPI):
             'start': start,
             'type': _type,
         })
-        return build_list_result(_parse_topic_table(xml, 'title,author,comment,updated'))
+        return build_list_result(parse_topic_table(xml, 'title,author,comment,updated'))
 
     # 已加入小组的所有话题，仅本人
     def list_joined_topics(self, start=0):
         xml = self._xml(API_GROUP_HOME, params={'start': start})
-        return build_list_result(_parse_topic_table(xml, 'title,comment,created,group'), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     # 发表的话题, 仅本人
     def list_user_topics(self, user_alias=None, start=0):
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % user_alias, params={'start': start})
-        return build_list_result(_parse_topic_table(xml, 'title,comment,created,group'), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     # 回复过的话题列表，仅本人
     def list_commented_topics(self, start=0):
         xml = self._xml(API_GROUP_LIST_USER_COMMENTED_TOPICS % self._user_alias, params={'start': start})
-        return build_list_result(_parse_topic_table(xml, 'title,comment,time,group'), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_liked_topics(self, user_alias=None, start=0):
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_LIKED_TOPICS % user_alias, params={'start': start})
-        return build_list_result(_parse_topic_table(xml, 'title,comment,time,group'), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     # 推荐的话题列表
     def list_reced_topics(self, user_alias=None, start=0):
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_RECED_TOPICS % user_alias, params={'start': start})
-        return build_list_result(_parse_topic_table(xml, 'title,comment,time,group,rec'), _parse_total(xml))
+        return build_list_result(parse_topic_table(xml, 'title,comment,time,group,rec'), xml)
 
-    # 创建话题
-    def add_topic(self, group_id, title, content):
-        pass
+    # 创建话题(验证码真的好恶心哦, 假设通过测试了)
+    def add_topic(self, group_alias, title, content):
+        xml = self._req(API_GROUP_ADD_TOPIC % group_alias, 'post', data={
+            'ck': self.ck(),
+            'rev_title': title,
+            'rev_text': content,
+            'rev_submit': '好了，发言',
+        })
+        return not xml.url.startswith(API_GROUP_ADD_TOPIC % group_alias)
 
     # 删除话题
     def remove_topic(self, topic_id):
-        pass
+        comment_start = 0
+        while comment_start is not None:
+            comments = self.list_comments(topic_id, comment_start)
+            for comment in comments['results']:
+                self.remove_comment(topic_id, comment['id'])
+            comment_start = comments['next_start']
+        return self._xml(API_GROUP_REMOVE_TOPIC % topic_id, params={'ck': self.ck()})
 
     # 编辑话题
     def update_topic(self, topic_id, title, content):
-        pass
+        xml = self._req(API_GROUP_UPDATE_TOPIC % topic_id, 'post', data={
+            'ck': self.ck(),
+            'rev_title': title,
+            'rev_text': content,
+            'rev_submit': '好了，改吧',
+        })
+        return not xml.url.startswith(API_GROUP_UPDATE_TOPIC % topic_id)
 
     # 推荐话题
     def rec_topic(self, topic_id):
-        pass
+        raise NotImplementedError('Too complex')
 
     # 喜欢话题
     def like_topic(self, topic_id):
-        pass
+        raise NotImplementedError('Too complex')
 
     def undo_rec_topic(self, topic_id):
-        pass
+        raise NotImplementedError('Too complex')
 
     def undo_like_topic(self, topic_id):
-        pass
+        raise NotImplementedError('Too complex')
 
     # 回复列表
     def list_comments(self, topic_id, start=0):
-        pass
+        xml = self._xml(API_GROUP_GET_TOPIC % topic_id, params={'start': start})
+        xml_results = xml.xpath('//ul[@id="comments"]/li')
+        results = []
+        for item in xml_results:
+            try:
+                author_avatar = item.xpath('.//img/@src')[0]
+                author_url = item.xpath('.//div[@class="user-face"]/a/@href')[0]
+                author_alias = slash_right(author_url)
+                author_intro = item.xpath('.//h4/text()')[1].strip()
+                author_nickname = item.xpath('.//h4/a/text()')[0].strip()
+                created_at = item.xpath('.//h4/span/text()')[0].strip()
+                content = etree.tostring(item.xpath('.//div[@class="reply-doc content"]/p')[0]).decode('utf8').strip()
+                cid = item.get('id')
+                results.append({
+                    'id': cid,
+                    'author_avatar': author_avatar,
+                    'author_url': author_url,
+                    'author_alias': author_alias,
+                    'author_intro': author_intro,
+                    'author_nickname': author_nickname,
+                    'created_at': created_at,
+                    'content': unescape(content),
+                })
+            except Exception as e:
+                print('parse comment exception: %s' % e, traceback.print_exc())
+        return build_list_result(results, xml)
 
     # 添加回复
-    def add_comment(self, topic_id, content, reply_id):
-        pass
+    def add_comment(self, topic_id, content, reply_id=None):
+        return self._xml(API_GROUP_ADD_COMMENT % topic_id, 'post', data={
+            'ck': self.ck(),
+            'ref_cid': reply_id,
+            'rv_comment': content,
+            'start': 0,
+            'submit_btn': '加上去',
+        })
 
     # 删除回复
-    def remove_comment(self, comment_id):
-        pass
+    def remove_comment(self, topic_id, comment_id, reason='0', other=None):
+        params = {'cid': comment_id}
+        data = {'cid': comment_id, 'ck': self.ck(), 'reason': reason, 'other': other, 'submit': '确定'}
+        r = self._req(API_GROUP_REMOVE_COMMENT % topic_id, 'post', params, data)
+        if r.text.find('douban_admin') > -1:
+            r = self._req(API_GROUP_ADMIN_REMOVE_COMMENT % topic_id, 'post', params, data)
+        print(r.url)
 
     # 自己的回复
     def list_user_comments(self, topic_id, user_alias=None):
-        pass
+        user_alias = user_alias or self._user_alias
+        comment_start = 0
+        results = []
+        while comment_start is not None:
+            comments = self.list_comments(topic_id, comment_start)
+            results += [item for item in comments['results'] if item['author_alias'] == user_alias]
+            comment_start = comments['next_start']
+        return results
+
+    def remove_commented_topic(self, topic_id):
+        return [self.remove_comment(topic_id, item['id']) for item in self.list_user_comments(topic_id)]

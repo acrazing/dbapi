@@ -9,6 +9,8 @@ import sys
 import time
 
 import pickle
+from pprint import pprint
+
 import requests
 from dbapi.Group import Group
 from dbapi.config import api_config
@@ -137,7 +139,7 @@ def test_api(argv):
     print('testing: %s.%s' % (argv[0], argv[1]))
     app = getattr(api, argv[0])
     func = getattr(app, argv[1])
-    print('result:', func(*argv[2:]))
+    pprint(func(*argv[2:]))
 
 
 if __name__ == '__main__':
