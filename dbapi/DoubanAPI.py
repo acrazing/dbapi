@@ -119,12 +119,17 @@ def test_argv(argv):
              "__utmz=30149280.1493266936.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utmv=30149280.6101; " \
              "ck=fLns; _pk_id.100001.8cb4=75ccca2b64c8e7b4.1493266929.1.1493272150.1493266929.; " \
              "_pk_ses.100001.8cb4=*; push_noty_num=0; push_doumail_num=0 "
-    input = argv[0]
-    print('equals:', input == origin)
-    r1 = requests.get(API_ACCOUNT_HOME, headers={'Cookie': input})
+    arg = argv[0]
+    print('equals:', arg == origin)
+    r1 = requests.get(API_ACCOUNT_HOME, headers={'Cookie': arg})
     print('r1.url:', r1.url)
     r2 = requests.get(API_ACCOUNT_HOME, headers={'Cookie': origin})
     print('r2.url:', r2.url)
+
+
+def test_first_api(argv):
+    api = DoubanAPI()
+    print('searched groups:', api.group.search_groups('group'))
 
 
 if __name__ == '__main__':

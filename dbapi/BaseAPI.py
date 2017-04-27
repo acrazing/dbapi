@@ -4,6 +4,8 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: BaseAPI.
+import requests
+from lxml import html
 
 
 class BaseAPI(object):
@@ -11,11 +13,10 @@ class BaseAPI(object):
         self._headers = headers
         self._cookies = cookies
 
-    def _request(self, url, method, payload):
-        pass
+    def _json(self, url, method='get', params=None, data=None):
+        r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
+        return r.json()
 
-    def _json(self, url, method, payload):
-        pass
-
-    def _xml(self, url, method, payload):
-        pass
+    def _xml(self, url, method='get', params=None, data=None):
+        r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
+        return html.fromstring(r.text, url)
