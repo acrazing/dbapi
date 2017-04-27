@@ -8,7 +8,7 @@ import re
 import traceback
 
 from dbapi.BaseAPI import BaseAPI
-from dbapi.endpoints import API_GROUP_SEARCH_GROUPS
+from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUPS, API_GROUP_LIST_GROUP_TOPICS
 
 
 class Group(BaseAPI):
@@ -31,7 +31,7 @@ class Group(BaseAPI):
                     'id': re.search(r'sid[^\d]+(\d+)', onclick).groups()[0],
                     'url': url,
                     'alias': url.rstrip('/').rsplit('/', 1)[1],
-                    'title': item.xpath('.//h3/a/text()')[0],
+                    'name': item.xpath('.//h3/a/text()')[0],
                     'user_count': int(re.match(r'\d+', info).group()),
                     'user_alias': re.search(r'个(.+)\s*在此', info).groups()[0],
                 }
@@ -47,20 +47,67 @@ class Group(BaseAPI):
         return {'results': results, 'total': total}
 
     # 加入的小组列表
-    def list_joined_groups(self, start=0, user_id=None):
-        pass
+    def list_joined_groups(self, user_alias=None):
+        xml = self._xml(API_GROUP_LIST_JOINED_GROUPS % (user_alias or self._user_alias))
+        xml_results = xml.xpath('//div[@class="group-list group-cards"]/ul/li')
+        results = []
+        for item in xml_results:
+            try:
+                icon = item.xpath('.//img/@src')[0]
+                link = item.xpath('.//div[@class="title"]/a')[0]
+                url = link.get('href')
+                name = link.text
+                alias = url.rstrip('/').rsplit('/', 1)[1]
+                user_count = int(item.xpath('.//span[@class="num"]/text()')[0][1:-1])
+                results.append({
+                    'icon': icon,
+                    'alias': alias,
+                    'url': url,
+                    'name': name,
+                    'user_count': user_count,
+                })
+            except Exception as e:
+                print('list joined groups exception: %s' % e, traceback.print_exc())
+        return results
 
     # 删除小组
     def remove_group(self, group_id):
         pass
 
     # 加入小组
-    def join_group(self, group_id, reason=None):
-        pass
+    def join_group(self, group_alias, message=None):
+        xml = self._xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, params={
+            'action': 'join',
+            'ck': self.ck(),
+        })
+        misc = xml.xpath('//div[@class="group-misc"]')[0]
+        intro = misc.xpath('string(.)') or ''
+        if intro.find('退出小组') > -1:
+            return 'joined'
+        elif intro.find('你已经申请加入小组') > -1:
+            return 'waiting'
+        elif intro.find('申请加入小组') > -1:
+            res = self._xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, 'post', data={
+                'ck': self.ck(),
+                'action': 'request_join',
+                'message': message,
+                'send': '发送',
+            })
+            misc = res.xpath('//div[@class="group-misc"]')[0]
+            intro = misc.xpath('string(.)') or ''
+            if intro.find('你已经申请加入小组') > -1:
+                return 'waiting'
+            else:
+                return 'initial'
+        else:
+            return 'initial'
 
     # 离开小组
-    def leave_group(self, group_id):
-        pass
+    def leave_group(self, group_alias):
+        return self._xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, params={
+            'action': 'quit',
+            'ck': self.ck(),
+        })
 
     # 搜索话题
     def search_topics(self, keyword, start=0):

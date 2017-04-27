@@ -89,7 +89,7 @@ class DoubanAPI(object):
 
     @property
     def group(self):
-        return Group(self.headers, self.cookies)
+        return Group(self.headers, self.cookies, self.user_alias)
 
 
 def test_login(argv):
@@ -130,6 +130,14 @@ def test_argv(argv):
 def test_first_api(argv):
     api = DoubanAPI()
     print('searched groups:', api.group.search_groups('group'))
+
+
+def test_api(argv):
+    api = DoubanAPI()
+    print('testing: %s.%s' % (argv[0], argv[1]))
+    app = getattr(api, argv[0])
+    func = getattr(app, argv[1])
+    print('result:', func(*argv[2:]))
 
 
 if __name__ == '__main__':
