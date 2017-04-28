@@ -22,7 +22,7 @@ TODO
 
 ## 详细文档
 
-<https://acrazing.github.io/dbapi/doc/>
+<https://acrazing.github.io/dbapi/doc/_build/html>
 
 ## Roadmap
 

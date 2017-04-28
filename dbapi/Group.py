@@ -30,6 +30,7 @@ class Group(BaseAPI):
     def _parse_topic_table(self, xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
         """
         解析话题列表
+        
         :internal
         :param xml: 页面XML 
         :param tds: 每列的含义，可以是title, created, comment, group, updated, author, time, rec
@@ -92,6 +93,7 @@ class Group(BaseAPI):
     def add_group(self, **kwargs):
         """
         创建小组
+        
         :param kwargs: 
         :return: 
         """
@@ -100,6 +102,7 @@ class Group(BaseAPI):
     def search_groups(self, keyword, start=0):
         """
         搜索小组
+        
         :param keyword: 搜索的关键字
         :param start: 翻页
         :return: 含总数的列表
@@ -129,6 +132,7 @@ class Group(BaseAPI):
     def list_joined_groups(self, user_alias=None):
         """
         已加入的小组列表
+        
         :param user_alias: 用户名，默认为当前用户名
         :return: 单页列表
         """
@@ -157,6 +161,7 @@ class Group(BaseAPI):
     def remove_group(self, group_id):
         """
         删除小组
+        
         :param group_id: 小组ID
         :return: 
         """
@@ -165,12 +170,13 @@ class Group(BaseAPI):
     def join_group(self, group_alias, message=None):
         """
         加入小组
+        
         :param group_alias: 小组ID
         :param message: 如果要验证，留言信息
         :return: 枚举
-            - joined: 加入成功
-            - waiting: 等待审核
-            -initial: 加入失败
+                - joined: 加入成功
+                - waiting: 等待审核
+                - initial: 加入失败
         """
         xml = self._xml(API_GROUP_GROUP_HOME % group_alias, params={
             'action': 'join',
@@ -201,6 +207,7 @@ class Group(BaseAPI):
     def leave_group(self, group_alias):
         """
         退出小组
+        
         :param group_alias: 小组ID
         :return: 
         """
@@ -212,6 +219,7 @@ class Group(BaseAPI):
     def search_topics(self, keyword, sort='relevance', start=0):
         """
         搜索话题
+        
         :param keyword: 关键字
         :param sort: 排序方式 relevance/newest
         :param start: 翻页
@@ -223,6 +231,7 @@ class Group(BaseAPI):
     def list_topics(self, group_alias, _type='', start=0):
         """
         小组内话题列表
+        
         :param group_alias: 小组ID
         :param _type: 类型 默认最新，hot:最热
         :param start: 翻页
@@ -237,6 +246,7 @@ class Group(BaseAPI):
     def list_joined_topics(self, start=0):
         """
         已加入的所有小组的话题列表
+        
         :param start: 翻页
         :return: 带下一页的列表
         """
@@ -246,6 +256,7 @@ class Group(BaseAPI):
     def list_user_topics(self, start=0):
         """
         发表的话题
+        
         :param start: 翻页
         :return: 带下一页的列表
         """
@@ -255,6 +266,7 @@ class Group(BaseAPI):
     def list_commented_topics(self, start=0):
         """
         回复过的话题列表
+        
         :param start: 翻页
         :return: 带下一页的列表
         """
@@ -264,6 +276,7 @@ class Group(BaseAPI):
     def list_liked_topics(self, user_alias=None, start=0):
         """
         喜欢过的话题
+        
         :param user_alias: 指定用户，默认当前
         :param start: 翻页
         :return: 带下一页的列表
@@ -275,6 +288,7 @@ class Group(BaseAPI):
     def list_reced_topics(self, user_alias=None, start=0):
         """
         推荐的话题列表
+        
         :param user_alias: 指定用户，默认当前
         :param start: 翻页
         :return: 带下一页的列表
@@ -286,6 +300,7 @@ class Group(BaseAPI):
     def add_topic(self, group_alias, title, content):
         """
         创建话题（小心验证码~）
+        
         :param group_alias: 小组ID
         :param title: 标题
         :param content: 内容
@@ -302,6 +317,7 @@ class Group(BaseAPI):
     def remove_topic(self, topic_id):
         """
         删除话题（需要先删除所有评论，使用默认参数）
+        
         :param topic_id: 话题ID
         :return: None
         """
@@ -316,6 +332,7 @@ class Group(BaseAPI):
     def update_topic(self, topic_id, title, content):
         """
         更新话题
+        
         :param topic_id: 话题ID
         :param title: 标题
         :param content: 内容
@@ -332,6 +349,7 @@ class Group(BaseAPI):
     def rec_topic(self, topic_id):
         """
         推荐话题
+        
         :param topic_id: 话题ID
         :return: 
         """
@@ -340,6 +358,7 @@ class Group(BaseAPI):
     def like_topic(self, topic_id):
         """
         喜欢话题
+        
         :param topic_id: 话题ID
         :return: 
         """
@@ -348,6 +367,7 @@ class Group(BaseAPI):
     def undo_rec_topic(self, rec_id):
         """
         取消推荐
+        
         :param rec_id: 推荐ID
         :return: 
         """
@@ -356,6 +376,7 @@ class Group(BaseAPI):
     def undo_like_topic(self, topic_id):
         """
         取消喜欢
+        
         :param topic_id: 话题ID
         :return: 
         """
@@ -364,6 +385,7 @@ class Group(BaseAPI):
     def list_comments(self, topic_id, start=0):
         """
         回复列表
+        
         :param topic_id: 话题ID
         :param start: 翻页
         :return: 带下一页的列表
@@ -398,6 +420,7 @@ class Group(BaseAPI):
     def add_comment(self, topic_id, content, reply_id=None):
         """
         添加评论
+        
         :param topic_id: 话题ID
         :param content: 内容
         :param reply_id: 回复ID
@@ -414,6 +437,7 @@ class Group(BaseAPI):
     def remove_comment(self, topic_id, comment_id, reason='0', other=None):
         """
         删除评论（自己发的话题所有的都可以删除，否则只能删自己发的）
+        
         :param topic_id: 话题ID
         :param comment_id: 评论ID
         :param reason: 原因 0/1/2 （内容不符/反动/其它）
@@ -431,6 +455,7 @@ class Group(BaseAPI):
     def list_user_comments(self, topic_id, user_alias=None):
         """
         列出用户在话题下的所有回复
+        
         :param topic_id: 话题ID
         :param user_alias: 用户ID，默认当前
         :return: 纯列表
@@ -447,6 +472,7 @@ class Group(BaseAPI):
     def remove_commented_topic(self, topic_id):
         """
         删除回复的话题（删除所有自己发布的评论）
+        
         :param topic_id: 话题ID
         :return: None
         """

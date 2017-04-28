@@ -4,8 +4,11 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: config.
-import logging
+"""
+默认配置
+"""
 
+import logging
 import sys
 
 api_config = {

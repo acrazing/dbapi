@@ -12,9 +12,11 @@ class BaseAPI(object):
     """
     HTTP客户端封装
     """
+
     def __init__(self, headers, cookies, user_alias, logger):
         """
         初始化
+        
         :param headers: 公共头
         :param cookies: 会话信息
         :param user_alias: 用户名
@@ -28,19 +30,20 @@ class BaseAPI(object):
     def ck(self):
         """
         获取ck
-        :protected
-        :return: 
+        
+        :return: ck
         """
         return self._cookies.get('ck', '')
 
     def _req(self, url, method='get', params=None, data=None):
         """
         请求API
+        
         :param url: API
         :param method: HTTP METHOD
         :param params: query
         :param data: body
-        :return: 
+        :return: Response
         """
         r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
         self.logger.info('[api] %s: %s' % (method, r.url))
@@ -49,6 +52,7 @@ class BaseAPI(object):
     def _json(self, url, method='get', params=None, data=None):
         """
         请求并返回json，参数同 _req()
+        
         :param url: 
         :param method: 
         :param params: 
@@ -61,6 +65,7 @@ class BaseAPI(object):
     def _xml(self, url, method='get', params=None, data=None):
         """
         请求并返回xml，参数同 _req()
+        
         :param url: 
         :param method: 
         :param params: 
