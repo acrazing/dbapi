@@ -112,6 +112,19 @@ api.group.remove_comment()
 api.group.list_user_comments()
 # 删除回复的话题（删除所有回复）
 api.group.remove_commented_topic()
+
+
+######## 用户相关API ##########
+
+# 获取用户信息
+api.people.get_people(user_alias=None)
+
+# 关注用户列表
+api.people.list_contacts(user_alias=None, start=0)
+
+# 关注者列表
+api.people.list_rev_contacts(user_alias=None, start=0)
+
 ```
 
 ## Roadmap

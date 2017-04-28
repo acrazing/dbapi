@@ -7,6 +7,10 @@
 import re
 
 
+def first(data, defaults=None):
+    return data[0] if data else defaults
+
+
 def slash_right(url='', index=1):
     """
     获取由/分割的字符串url的最后第index段，忽略结尾空串

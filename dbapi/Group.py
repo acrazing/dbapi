@@ -8,7 +8,6 @@
 豆瓣小组相关API
 """
 import re
-import traceback
 from html import unescape
 
 from lxml import etree
@@ -87,7 +86,7 @@ class Group(BaseAPI):
                         result['rec_id'] = re.search(r'rec_id=(\d+)', xml_rec).groups()[0]
                 results.append(result)
             except Exception as e:
-                self.logger.error('parse topic table exception: %s' % e, traceback.print_exc())
+                self.logger.exception('parse topic table exception: %s' % e)
         return results
 
     def add_group(self, **kwargs):
@@ -126,7 +125,7 @@ class Group(BaseAPI):
                 }
                 results.append(meta)
             except Exception as e:
-                self.logger.error('parse search groups result error: %s' % e, traceback.print_exc())
+                self.logger.exception('parse search groups result error: %s' % e)
         return build_list_result(results, xml)
 
     def list_joined_groups(self, user_alias=None):
@@ -155,7 +154,7 @@ class Group(BaseAPI):
                     'user_count': user_count,
                 })
             except Exception as e:
-                self.logger.error('parse joined groups exception: %s' % e, traceback.print_exc())
+                self.logger.exception('parse joined groups exception: %s' % e)
         return build_list_result(results, xml)
 
     def remove_group(self, group_id):
@@ -414,7 +413,7 @@ class Group(BaseAPI):
                     'content': unescape(content),
                 })
             except Exception as e:
-                self.logger.error('parse comment exception: %s' % e, traceback.print_exc())
+                self.logger.exception('parse comment exception: %s' % e)
         return build_list_result(results, xml)
 
     def add_comment(self, topic_id, content, reply_id=None):

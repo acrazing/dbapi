@@ -4,17 +4,18 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: DoubanAPI.
+import logging
 import os
+import pickle
 import re
 import sys
 import time
-
-import pickle
 from pprint import pprint
 
-import logging
 import requests
+
 from dbapi.Group import Group
+from dbapi.People import People
 from dbapi.config import api_config
 from dbapi.endpoints import API_ACCOUNT_LOGIN, API_ACCOUNT_HOME, API_HOME, \
     API_ACCOUNT_LOGOUT
@@ -155,6 +156,15 @@ class DoubanAPI(object):
         :return: dbapi.Group.Group
         """
         return Group(self.headers, self.cookies, self.user_alias, self.logger)
+
+    @property
+    def people(self):
+        """
+        用户模块
+        
+        :return: dbapi.People.People
+        """
+        return People(self.headers, self.cookies, self.user_alias, self.logger)
 
 
 def test_api(argv):
