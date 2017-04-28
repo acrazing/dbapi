@@ -121,7 +121,7 @@ class DoubanAPI(object):
         r1 = requests.get(API_ACCOUNT_HOME, headers=self.headers, cookies=self.cookies)
         self.user_alias = slash_right(r1.url)
         self.cookies.update(dict(r1.cookies))
-        self.logger.log('flush with user_alias <%s>' % self.user_alias)
+        self.logger.info('flush with user_alias <%s>' % self.user_alias)
         return self
 
     def use(self, cookies):
