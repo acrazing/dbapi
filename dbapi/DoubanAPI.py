@@ -97,9 +97,11 @@ class DoubanAPI(object):
             'form_password': password,
             'remember': 'on',
         }
-        r1 = requests.post(API_ACCOUNT_LOGIN, headers=self.headers, cookies=cookies, data=data, allow_redirects=False)
-        if not r1.headers.get('Location', '').startswith(API_HOME):
-            raise Exception('Authorization failed: %s' % r1.headers.get('Location'))
+        r1 = requests.post(API_ACCOUNT_LOGIN, headers=self.headers, cookies=cookies, data=data)
+        cookies.update(dict(r1.cookies))
+        [cookies.update(dict(r.cookies)) for r in r1.history]
+        if 'dbcl2' not in cookies:
+            raise Exception('Authorization failed: %s' % r1.url)
         cookies.update(dict(r1.cookies))
         self.username = username
         self.password = password
