@@ -4,6 +4,9 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: Group.
+"""
+豆瓣小组相关API
+"""
 import re
 import traceback
 from html import unescape
@@ -20,6 +23,14 @@ from dbapi.utils import slash_right, build_list_result
 
 
 def parse_topic_table(xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
+    """
+    解析话题列表
+    :internal
+    :param xml: 页面XML 
+    :param tds: 每列的含义，可以是title, created, comment, group, updated, author, time, rec
+    :param selector: 表在页面中的位置
+    :return: 
+    """
     xml_results = xml.xpath(selector)
     results = []
     tds = tds.split(',')
@@ -75,12 +86,25 @@ def parse_topic_table(xml, tds='title,created,comment,group', selector='//table[
 
 
 class Group(BaseAPI):
-    # 创建小组
+    """
+    豆瓣小组客户端
+    """
+
     def add_group(self, **kwargs):
+        """
+        创建小组
+        :param kwargs: 
+        :return: 
+        """
         raise NotImplementedError()
 
-    # 搜索小组
     def search_groups(self, keyword, start=0):
+        """
+        搜索小组
+        :param keyword: 搜索的关键字
+        :param start: 翻页
+        :return: 含总数的列表
+        """
         xml = self._xml(API_GROUP_SEARCH_GROUPS % (start, keyword))
         xml_results = xml.xpath('//div[@class="groups"]/div[@class="result"]')
         results = []
@@ -103,8 +127,12 @@ class Group(BaseAPI):
                 print('parse result error: %s' % e, traceback.print_exc())
         return build_list_result(results, xml)
 
-    # 加入的小组列表，所有人
     def list_joined_groups(self, user_alias=None):
+        """
+        已加入的小组列表
+        :param user_alias: 用户名，默认为当前用户名
+        :return: 单页列表
+        """
         xml = self._xml(API_GROUP_LIST_JOINED_GROUPS % (user_alias or self._user_alias))
         xml_results = xml.xpath('//div[@class="group-list group-cards"]/ul/li')
         results = []
@@ -125,14 +153,26 @@ class Group(BaseAPI):
                 })
             except Exception as e:
                 print('list joined groups exception: %s' % e, traceback.print_exc())
-        return build_list_result(results)
+        return build_list_result(results, xml)
 
-    # 删除小组
     def remove_group(self, group_id):
+        """
+        删除小组
+        :param group_id: 小组ID
+        :return: 
+        """
         raise NotImplementedError()
 
-    # 加入小组
     def join_group(self, group_alias, message=None):
+        """
+        加入小组
+        :param group_alias: 小组ID
+        :param message: 如果要验证，留言信息
+        :return: 枚举
+            - joined: 加入成功
+            - waiting: 等待审核
+            -initial: 加入失败
+        """
         xml = self._xml(API_GROUP_GROUP_HOME % group_alias, params={
             'action': 'join',
             'ck': self.ck(),
@@ -159,55 +199,99 @@ class Group(BaseAPI):
         else:
             return 'initial'
 
-    # 离开小组
     def leave_group(self, group_alias):
-        return self._xml(API_GROUP_GROUP_HOME % group_alias, params={
+        """
+        退出小组
+        :param group_alias: 小组ID
+        :return: 
+        """
+        return self._req(API_GROUP_GROUP_HOME % group_alias, params={
             'action': 'quit',
             'ck': self.ck(),
         })
 
-    # 搜索话题
     def search_topics(self, keyword, sort='relevance', start=0):
+        """
+        搜索话题
+        :param keyword: 关键字
+        :param sort: 排序方式 relevance/newest
+        :param start: 翻页
+        :return: 带总数的列表
+        """
         xml = self._xml(API_GROUP_SEARCH_TOPICS % (start, sort, keyword))
         return build_list_result(parse_topic_table(xml), xml)
 
-    # 小组内的话题，所有人
     def list_topics(self, group_alias, _type='', start=0):
+        """
+        小组内话题列表
+        :param group_alias: 小组ID
+        :param _type: 类型 默认最新，hot:最热
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         xml = self._xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, params={
             'start': start,
             'type': _type,
         })
         return build_list_result(parse_topic_table(xml, 'title,author,comment,updated'))
 
-    # 已加入小组的所有话题，仅本人
     def list_joined_topics(self, start=0):
+        """
+        已加入的所有小组的话题列表
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         xml = self._xml(API_GROUP_HOME, params={'start': start})
         return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
 
-    # 发表的话题, 仅本人
-    def list_user_topics(self, user_alias=None, start=0):
-        user_alias = user_alias or self._user_alias
-        xml = self._xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % user_alias, params={'start': start})
+    def list_user_topics(self, start=0):
+        """
+        发表的话题
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
+        xml = self._xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % self._user_alias, params={'start': start})
         return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
 
-    # 回复过的话题列表，仅本人
     def list_commented_topics(self, start=0):
+        """
+        回复过的话题列表
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         xml = self._xml(API_GROUP_LIST_USER_COMMENTED_TOPICS % self._user_alias, params={'start': start})
         return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_liked_topics(self, user_alias=None, start=0):
+        """
+        喜欢过的话题
+        :param user_alias: 指定用户，默认当前
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_LIKED_TOPICS % user_alias, params={'start': start})
         return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
 
-    # 推荐的话题列表
     def list_reced_topics(self, user_alias=None, start=0):
+        """
+        推荐的话题列表
+        :param user_alias: 指定用户，默认当前
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_RECED_TOPICS % user_alias, params={'start': start})
         return build_list_result(parse_topic_table(xml, 'title,comment,time,group,rec'), xml)
 
-    # 创建话题(验证码真的好恶心哦, 假设通过测试了)
     def add_topic(self, group_alias, title, content):
+        """
+        创建话题（小心验证码~）
+        :param group_alias: 小组ID
+        :param title: 标题
+        :param content: 内容
+        :return: bool
+        """
         xml = self._req(API_GROUP_ADD_TOPIC % group_alias, 'post', data={
             'ck': self.ck(),
             'rev_title': title,
@@ -216,18 +300,28 @@ class Group(BaseAPI):
         })
         return not xml.url.startswith(API_GROUP_ADD_TOPIC % group_alias)
 
-    # 删除话题
     def remove_topic(self, topic_id):
+        """
+        删除话题（需要先删除所有评论，使用默认参数）
+        :param topic_id: 话题ID
+        :return: None
+        """
         comment_start = 0
         while comment_start is not None:
             comments = self.list_comments(topic_id, comment_start)
             for comment in comments['results']:
                 self.remove_comment(topic_id, comment['id'])
             comment_start = comments['next_start']
-        return self._xml(API_GROUP_REMOVE_TOPIC % topic_id, params={'ck': self.ck()})
+        return self._req(API_GROUP_REMOVE_TOPIC % topic_id, params={'ck': self.ck()})
 
-    # 编辑话题
     def update_topic(self, topic_id, title, content):
+        """
+        更新话题
+        :param topic_id: 话题ID
+        :param title: 标题
+        :param content: 内容
+        :return: bool
+        """
         xml = self._req(API_GROUP_UPDATE_TOPIC % topic_id, 'post', data={
             'ck': self.ck(),
             'rev_title': title,
@@ -236,22 +330,45 @@ class Group(BaseAPI):
         })
         return not xml.url.startswith(API_GROUP_UPDATE_TOPIC % topic_id)
 
-    # 推荐话题
     def rec_topic(self, topic_id):
+        """
+        推荐话题
+        :param topic_id: 话题ID
+        :return: 
+        """
         raise NotImplementedError('Too complex')
 
-    # 喜欢话题
     def like_topic(self, topic_id):
+        """
+        喜欢话题
+        :param topic_id: 话题ID
+        :return: 
+        """
         raise NotImplementedError('Too complex')
 
-    def undo_rec_topic(self, topic_id):
+    def undo_rec_topic(self, rec_id):
+        """
+        取消推荐
+        :param rec_id: 推荐ID
+        :return: 
+        """
         raise NotImplementedError('Too complex')
 
     def undo_like_topic(self, topic_id):
+        """
+        取消喜欢
+        :param topic_id: 话题ID
+        :return: 
+        """
         raise NotImplementedError('Too complex')
 
-    # 回复列表
     def list_comments(self, topic_id, start=0):
+        """
+        回复列表
+        :param topic_id: 话题ID
+        :param start: 翻页
+        :return: 带下一页的列表
+        """
         xml = self._xml(API_GROUP_GET_TOPIC % topic_id, params={'start': start})
         xml_results = xml.xpath('//ul[@id="comments"]/li')
         results = []
@@ -279,9 +396,15 @@ class Group(BaseAPI):
                 print('parse comment exception: %s' % e, traceback.print_exc())
         return build_list_result(results, xml)
 
-    # 添加回复
     def add_comment(self, topic_id, content, reply_id=None):
-        return self._xml(API_GROUP_ADD_COMMENT % topic_id, 'post', data={
+        """
+        添加评论
+        :param topic_id: 话题ID
+        :param content: 内容
+        :param reply_id: 回复ID
+        :return: None
+        """
+        return self._req(API_GROUP_ADD_COMMENT % topic_id, 'post', data={
             'ck': self.ck(),
             'ref_cid': reply_id,
             'rv_comment': content,
@@ -289,17 +412,30 @@ class Group(BaseAPI):
             'submit_btn': '加上去',
         })
 
-    # 删除回复
     def remove_comment(self, topic_id, comment_id, reason='0', other=None):
+        """
+        删除评论（自己发的话题所有的都可以删除，否则只能删自己发的）
+        :param topic_id: 话题ID
+        :param comment_id: 评论ID
+        :param reason: 原因 0/1/2 （内容不符/反动/其它）
+        :param other: 其它原因的具体(2)
+        :return: None
+        """
         params = {'cid': comment_id}
         data = {'cid': comment_id, 'ck': self.ck(), 'reason': reason, 'other': other, 'submit': '确定'}
         r = self._req(API_GROUP_REMOVE_COMMENT % topic_id, 'post', params, data)
         if r.text.find('douban_admin') > -1:
             r = self._req(API_GROUP_ADMIN_REMOVE_COMMENT % topic_id, 'post', params, data)
         print(r.url)
+        return r
 
-    # 自己的回复
     def list_user_comments(self, topic_id, user_alias=None):
+        """
+        列出用户在话题下的所有回复
+        :param topic_id: 话题ID
+        :param user_alias: 用户ID，默认当前
+        :return: 纯列表
+        """
         user_alias = user_alias or self._user_alias
         comment_start = 0
         results = []
@@ -310,4 +446,9 @@ class Group(BaseAPI):
         return results
 
     def remove_commented_topic(self, topic_id):
+        """
+        删除回复的话题（删除所有自己发布的评论）
+        :param topic_id: 话题ID
+        :return: None
+        """
         return [self.remove_comment(topic_id, item['id']) for item in self.list_user_comments(topic_id)]

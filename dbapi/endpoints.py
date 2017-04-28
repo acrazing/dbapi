@@ -4,7 +4,9 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: endpoints.
-
+"""
+API接口列表
+"""
 
 API_HOME = 'https://douban.com/'
 API_ACCOUNT_LOGIN = 'https://www.douban.com/accounts/login'

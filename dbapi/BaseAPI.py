@@ -9,23 +9,61 @@ from lxml import html
 
 
 class BaseAPI(object):
+    """
+    HTTP客户端封装
+    """
     def __init__(self, headers, cookies, user_alias):
+        """
+        初始化
+        :param headers: 公共头
+        :param cookies: 会话信息
+        :param user_alias: 用户名
+        """
         self._headers = headers or {}
         self._cookies = cookies or {}
         self._user_alias = user_alias or ''
 
     def ck(self):
+        """
+        获取ck
+        :protected
+        :return: 
+        """
         return self._cookies.get('ck', '')
 
     def _req(self, url, method='get', params=None, data=None):
+        """
+        请求API
+        :param url: API
+        :param method: HTTP METHOD
+        :param params: query
+        :param data: body
+        :return: 
+        """
         r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
         print('[api] %s: %s' % (method, r.url))
         return r
 
     def _json(self, url, method='get', params=None, data=None):
+        """
+        请求并返回json，参数同 _req()
+        :param url: 
+        :param method: 
+        :param params: 
+        :param data: 
+        :return: 
+        """
         r = self._req(url, method, params, data)
         return r.json()
 
     def _xml(self, url, method='get', params=None, data=None):
+        """
+        请求并返回xml，参数同 _req()
+        :param url: 
+        :param method: 
+        :param params: 
+        :param data: 
+        :return: 
+        """
         r = self._req(url, method, params, data)
         return html.fromstring(r.text, r.url)
