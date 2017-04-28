@@ -9,9 +9,12 @@ from setuptools import setup
 with open('./README.md', encoding='utf8') as f:
     desc = f.read()
 
+with open('./requirements.txt') as f:
+    requires = [r.split('=', 1)[0] for r in f.read().split('\n') if r]
+
 setup(
     name='dbapi',
-    version='0.0.2',
+    version='0.0.3',
     description='基于爬虫的豆瓣API SDK',
     url='https://github.com/acrazing/dbapi',
     author='acrazing',
@@ -19,6 +22,6 @@ setup(
     license='MIT',
     keywords='豆瓣 douban 豆瓣小组 api',
     long_description=desc,
-    install_requires=['lxml', 'requests'],
+    install_requires=requires,
     packages=['dbapi'],
 )

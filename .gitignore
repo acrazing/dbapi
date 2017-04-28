@@ -6,4 +6,3 @@ dist/
 temp/
 build/
 *.egg-info/
-requirements.txt
