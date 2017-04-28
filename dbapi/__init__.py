@@ -12,29 +12,39 @@ import time
 import pickle
 from pprint import pprint
 
+import logging
 import requests
 from dbapi.Group import Group
 from dbapi.config import api_config
 from dbapi.endpoints import API_ACCOUNT_LOGIN, API_ACCOUNT_HOME, API_HOME, \
     API_ACCOUNT_LOGOUT
+from dbapi.utils import slash_right
 
 
 class DoubanAPI(object):
     """
     客户端入口类，提供各个模块接口及身份验证
     """
+
     def __init__(self, cfg=api_config):
         """
         :param cfg: 客户端配置
                 persist_file: 用于持久化保存会话信息的文件
                 headers: HTTP请求的公共头信息
         """
-        self.headers = cfg.get('headers', {})
-        self.persist_file = cfg.get('persist_file', '__cache__.dat')
+        self.headers = cfg.get('headers', api_config['headers'])
+        self.persist_file = cfg.get('persist_file', api_config['persist_file'])
         self.cookies = {}
         self.username = ''
         self.password = ''
         self.user_alias = ''
+        logger = logging.getLogger(cfg.get('logger', api_config['logger']))
+        handler = logging.StreamHandler(cfg.get('log_destination', api_config['log_destination']))
+        formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(cfg.get('log_level', api_config['log_level']))
+        self.logger = logger
         self.load()  # 初始化时加载会话信息
 
     def persist(self):
@@ -49,6 +59,7 @@ class DoubanAPI(object):
                 'password': self.password,
                 'user_alias': self.user_alias,
             }, f)
+            self.logger.debug('persist session to <%s>' % self.persist_file)
         return self
 
     def load(self):
@@ -64,6 +75,7 @@ class DoubanAPI(object):
             self.username = cfg.get('username', '')
             self.password = cfg.get('password', '')
             self.user_alias = cfg.get('user_alias', '')
+            self.logger.debug('load session from <%s>' % self.persist_file)
         return self
 
     def login(self, username, password):
@@ -88,6 +100,7 @@ class DoubanAPI(object):
         cookies.update(dict(r1.cookies))
         self.username = username
         self.password = password
+        self.logger.info('login with username <%s>' % self.username)
         self.use(cookies)
         return self
 
@@ -100,8 +113,9 @@ class DoubanAPI(object):
         self.cookies.update(dict(r0.cookies))
         time.sleep(1)
         r1 = requests.get(API_ACCOUNT_HOME, headers=self.headers, cookies=self.cookies)
-        self.user_alias = r1.url.rstrip('/').rsplit('/', 1)[1]
+        self.user_alias = slash_right(r1.url)
         self.cookies.update(dict(r1.cookies))
+        self.logger.log('flush with user_alias <%s>' % self.user_alias)
         return self
 
     def use(self, cookies):
@@ -131,7 +145,7 @@ class DoubanAPI(object):
         豆瓣小组模块
         :return: 
         """
-        return Group(self.headers, self.cookies, self.user_alias)
+        return Group(self.headers, self.cookies, self.user_alias, self.logger)
 
 
 def test_api(argv):

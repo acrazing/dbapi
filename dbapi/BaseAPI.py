@@ -12,16 +12,18 @@ class BaseAPI(object):
     """
     HTTP客户端封装
     """
-    def __init__(self, headers, cookies, user_alias):
+    def __init__(self, headers, cookies, user_alias, logger):
         """
         初始化
         :param headers: 公共头
         :param cookies: 会话信息
         :param user_alias: 用户名
+        :param logger: logging.Logger
         """
         self._headers = headers or {}
         self._cookies = cookies or {}
         self._user_alias = user_alias or ''
+        self.logger = logger
 
     def ck(self):
         """
@@ -41,7 +43,7 @@ class BaseAPI(object):
         :return: 
         """
         r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
-        print('[api] %s: %s' % (method, r.url))
+        self.logger.info('[api] %s: %s' % (method, r.url))
         return r
 
     def _json(self, url, method='get', params=None, data=None):

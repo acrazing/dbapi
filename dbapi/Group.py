@@ -22,73 +22,72 @@ from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUP
 from dbapi.utils import slash_right, build_list_result
 
 
-def parse_topic_table(xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
-    """
-    解析话题列表
-    :internal
-    :param xml: 页面XML 
-    :param tds: 每列的含义，可以是title, created, comment, group, updated, author, time, rec
-    :param selector: 表在页面中的位置
-    :return: 
-    """
-    xml_results = xml.xpath(selector)
-    results = []
-    tds = tds.split(',')
-    for item in xml_results:
-        try:
-            result = {}
-            index = 0
-            for td in tds:
-                index += 1
-                if td == 'title':
-                    xml_title = item.xpath('.//td[position()=%s]/a' % index)[0]
-                    url = xml_title.get('href')
-                    tid = int(slash_right(url))
-                    title = xml_title.text
-                    result.update({'id': tid, 'url': url, 'title': title})
-                elif td == 'created':
-                    xml_created = item.xpath('.//td[position()=%s]/a' % index) \
-                                  or item.xpath('.//td[position()=%s]' % index)
-                    created_at = xml_created[0].get('title')
-                    result['created_at'] = created_at
-                elif td == 'comment':
-                    xml_comment = item.xpath('.//td[position()=%s]/span' % index) \
-                                  or item.xpath('.//td[position()=%s]' % index)
-                    comment_count = int(re.match(r'\d+', xml_comment[0].text).group())
-                    result['comment_count'] = comment_count
-                elif td == 'group':
-                    xml_group = item.xpath('.//td[position()=%s]/a' % index)[0]
-                    group_url = xml_group.get('href')
-                    group_alias = slash_right(group_url)
-                    group_name = xml_group.text
-                    result.update({'group_alias': group_alias, 'group_url': group_url, 'group_name': group_name})
-                elif td == 'author':
-                    xml_author = item.xpath('.//td[position()=%s]/a' % index)[0]
-                    author_url = xml_author.get('href')
-                    author_alias = slash_right(author_url)
-                    author_nickname = xml_author.text
-                    result.update({
-                        'author_url': author_url,
-                        'author_alias': author_alias,
-                        'author_nickname': author_nickname,
-                    })
-                elif td == 'updated':
-                    result['updated_at'] = item.xpath('.//td[position()=%s]/text()' % index)[0]
-                elif td == 'time':
-                    result['time'] = item.xpath('.//td[position()=%s]/text()' % index)[0]
-                elif td == 'rec':
-                    xml_rec = item.xpath('.//td[position()=%s]//a[@class="lnk-remove"]/@href' % (index - 1))[0]
-                    result['rec_id'] = re.search(r'rec_id=(\d+)', xml_rec).groups()[0]
-            results.append(result)
-        except Exception as e:
-            print('parse topic table exception: %s' % e, traceback.print_exc())
-    return results
-
-
 class Group(BaseAPI):
     """
     豆瓣小组客户端
     """
+
+    def _parse_topic_table(self, xml, tds='title,created,comment,group', selector='//table[@class="olt"]//tr'):
+        """
+        解析话题列表
+        :internal
+        :param xml: 页面XML 
+        :param tds: 每列的含义，可以是title, created, comment, group, updated, author, time, rec
+        :param selector: 表在页面中的位置
+        :return: 
+        """
+        xml_results = xml.xpath(selector)
+        results = []
+        tds = tds.split(',')
+        for item in xml_results:
+            try:
+                result = {}
+                index = 0
+                for td in tds:
+                    index += 1
+                    if td == 'title':
+                        xml_title = item.xpath('.//td[position()=%s]/a' % index)[0]
+                        url = xml_title.get('href')
+                        tid = int(slash_right(url))
+                        title = xml_title.text
+                        result.update({'id': tid, 'url': url, 'title': title})
+                    elif td == 'created':
+                        xml_created = item.xpath('.//td[position()=%s]/a' % index) \
+                                      or item.xpath('.//td[position()=%s]' % index)
+                        created_at = xml_created[0].get('title')
+                        result['created_at'] = created_at
+                    elif td == 'comment':
+                        xml_comment = item.xpath('.//td[position()=%s]/span' % index) \
+                                      or item.xpath('.//td[position()=%s]' % index)
+                        comment_count = int(re.match(r'\d+', xml_comment[0].text).group())
+                        result['comment_count'] = comment_count
+                    elif td == 'group':
+                        xml_group = item.xpath('.//td[position()=%s]/a' % index)[0]
+                        group_url = xml_group.get('href')
+                        group_alias = slash_right(group_url)
+                        group_name = xml_group.text
+                        result.update({'group_alias': group_alias, 'group_url': group_url, 'group_name': group_name})
+                    elif td == 'author':
+                        xml_author = item.xpath('.//td[position()=%s]/a' % index)[0]
+                        author_url = xml_author.get('href')
+                        author_alias = slash_right(author_url)
+                        author_nickname = xml_author.text
+                        result.update({
+                            'author_url': author_url,
+                            'author_alias': author_alias,
+                            'author_nickname': author_nickname,
+                        })
+                    elif td == 'updated':
+                        result['updated_at'] = item.xpath('.//td[position()=%s]/text()' % index)[0]
+                    elif td == 'time':
+                        result['time'] = item.xpath('.//td[position()=%s]/text()' % index)[0]
+                    elif td == 'rec':
+                        xml_rec = item.xpath('.//td[position()=%s]//a[@class="lnk-remove"]/@href' % (index - 1))[0]
+                        result['rec_id'] = re.search(r'rec_id=(\d+)', xml_rec).groups()[0]
+                results.append(result)
+            except Exception as e:
+                self.logger.error('parse topic table exception: %s' % e, traceback.print_exc())
+        return results
 
     def add_group(self, **kwargs):
         """
@@ -124,7 +123,7 @@ class Group(BaseAPI):
                 }
                 results.append(meta)
             except Exception as e:
-                print('parse result error: %s' % e, traceback.print_exc())
+                self.logger.error('parse search groups result error: %s' % e, traceback.print_exc())
         return build_list_result(results, xml)
 
     def list_joined_groups(self, user_alias=None):
@@ -152,7 +151,7 @@ class Group(BaseAPI):
                     'user_count': user_count,
                 })
             except Exception as e:
-                print('list joined groups exception: %s' % e, traceback.print_exc())
+                self.logger.error('parse joined groups exception: %s' % e, traceback.print_exc())
         return build_list_result(results, xml)
 
     def remove_group(self, group_id):
@@ -219,7 +218,7 @@ class Group(BaseAPI):
         :return: 带总数的列表
         """
         xml = self._xml(API_GROUP_SEARCH_TOPICS % (start, sort, keyword))
-        return build_list_result(parse_topic_table(xml), xml)
+        return build_list_result(self._parse_topic_table(xml), xml)
 
     def list_topics(self, group_alias, _type='', start=0):
         """
@@ -233,7 +232,7 @@ class Group(BaseAPI):
             'start': start,
             'type': _type,
         })
-        return build_list_result(parse_topic_table(xml, 'title,author,comment,updated'))
+        return build_list_result(self._parse_topic_table(xml, 'title,author,comment,updated'))
 
     def list_joined_topics(self, start=0):
         """
@@ -242,7 +241,7 @@ class Group(BaseAPI):
         :return: 带下一页的列表
         """
         xml = self._xml(API_GROUP_HOME, params={'start': start})
-        return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
+        return build_list_result(self._parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     def list_user_topics(self, start=0):
         """
@@ -251,7 +250,7 @@ class Group(BaseAPI):
         :return: 带下一页的列表
         """
         xml = self._xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % self._user_alias, params={'start': start})
-        return build_list_result(parse_topic_table(xml, 'title,comment,created,group'), xml)
+        return build_list_result(self._parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     def list_commented_topics(self, start=0):
         """
@@ -260,7 +259,7 @@ class Group(BaseAPI):
         :return: 带下一页的列表
         """
         xml = self._xml(API_GROUP_LIST_USER_COMMENTED_TOPICS % self._user_alias, params={'start': start})
-        return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
+        return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_liked_topics(self, user_alias=None, start=0):
         """
@@ -271,7 +270,7 @@ class Group(BaseAPI):
         """
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_LIKED_TOPICS % user_alias, params={'start': start})
-        return build_list_result(parse_topic_table(xml, 'title,comment,time,group'), xml)
+        return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_reced_topics(self, user_alias=None, start=0):
         """
@@ -282,7 +281,7 @@ class Group(BaseAPI):
         """
         user_alias = user_alias or self._user_alias
         xml = self._xml(API_GROUP_LIST_USER_RECED_TOPICS % user_alias, params={'start': start})
-        return build_list_result(parse_topic_table(xml, 'title,comment,time,group,rec'), xml)
+        return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group,rec'), xml)
 
     def add_topic(self, group_alias, title, content):
         """
@@ -393,7 +392,7 @@ class Group(BaseAPI):
                     'content': unescape(content),
                 })
             except Exception as e:
-                print('parse comment exception: %s' % e, traceback.print_exc())
+                self.logger.error('parse comment exception: %s' % e, traceback.print_exc())
         return build_list_result(results, xml)
 
     def add_comment(self, topic_id, content, reply_id=None):
@@ -426,7 +425,7 @@ class Group(BaseAPI):
         r = self._req(API_GROUP_REMOVE_COMMENT % topic_id, 'post', params, data)
         if r.text.find('douban_admin') > -1:
             r = self._req(API_GROUP_ADMIN_REMOVE_COMMENT % topic_id, 'post', params, data)
-        print(r.url)
+        self.logger.debug('remove comment final url is <%s>' % r.url)
         return r
 
     def list_user_comments(self, topic_id, user_alias=None):

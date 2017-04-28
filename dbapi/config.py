@@ -4,7 +4,9 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: config.
+import logging
 
+import sys
 
 api_config = {
     'persist_file': '__cache__.dat',
@@ -16,4 +18,7 @@ api_config = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.81 '
                       'Safari/537.36',
     },
+    'logger': 'dbapi',
+    'log_level': logging.DEBUG,
+    'log_destination': sys.stderr,
 }
