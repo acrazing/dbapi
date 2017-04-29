@@ -39,7 +39,11 @@ class RelationSpider(object):
             return
         if alias in self._users_dict:
             return
-        user = self._api.people.get_people(alias)
+        try:
+            user = self._api.people.get_people(alias)
+        except Exception as e:
+            self._api.logger.error('get user <%s> error: %s' % (alias, e))
+            return
         time.sleep(.8)  # 防验证码
         if not user:
             return
@@ -74,11 +78,15 @@ class RelationSpider(object):
             return
         self._api.logger.debug('spider start parse user<%s>' % alias)
         next_start = 0
-        while next_start is not None:
-            contacts = self._api.people.list_contacts(alias, next_start)
-            next_start = contacts['next_start']
-            for user in contacts['results']:
-                self.add_alias(user['alias'])
+        try:
+            while next_start is not None:
+                contacts = self._api.people.list_contacts(alias, next_start)
+                next_start = contacts['next_start']
+                for user in contacts['results']:
+                    self.add_alias(user['alias'])
+        except Exception as e:
+            self._api.logger.error('parse user <%s> error: %s' % (alias, e))
+            self.reset_alias(alias)
         self.next()
 
     def init(self):
