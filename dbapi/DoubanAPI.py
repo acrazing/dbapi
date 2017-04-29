@@ -56,7 +56,7 @@ class DoubanAPI(object):
             json.dump({
                 'cookies': self.cookies,
                 'user_alias': self.user_alias,
-            }, f)
+            }, f, indent=2)
             self.logger.debug('persist session to <%s>' % self.persist_file)
         return self
 

@@ -4,6 +4,7 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: relation.
+import atexit
 import json
 import os
 import time
@@ -11,9 +12,8 @@ import traceback
 from sys import argv
 from threading import Thread
 
-import atexit
-
 from dbapi.DoubanAPI import DoubanAPI
+from dbapi.endpoints import API_PEOPLE_HOME
 
 
 class Worker(Thread):
@@ -52,7 +52,9 @@ class Worker(Thread):
                         continue
                     try:
                         user = self._api.people.get_people(item['alias'])
-                        if user and self._spider.add_user(user):
+                        if not user:
+                            self._spider.report(item['alias'])
+                        elif self._spider.add_user(user):
                             self._api.logger.debug('add user<%s> contact_count<%s> rev_contact_count<%s>'
                                                    % (user['alias'], user['contact_count'], user['rev_contact_count']))
                     except Exception as e:
@@ -83,6 +85,7 @@ class RelationSpider(object):
         self._users_list = []  # 过滤出来的需要继续爬的用户列表，只保存ID，pop和append都是安全的
         self._users_dict = {}  # 爬过的用户字典，需要保证在persist时不被写入(所以在运行中persist有问题！)
         self._parsing = []  # 正在被爬关注用户的ID列表，append和remove是线程安全的(remove确定吗?)
+        self._reports_dict = {}  # 爬取出错的用户
         self._step = 0  # 上一次持久化后添加的用户数，不需要关注并发，误差可以忽略
         self.running = False
         self._persisting = False  # 赋值操作具有原子性，可保线程安全，保证在persist时user_dict不被写入
@@ -96,7 +99,7 @@ class RelationSpider(object):
         for item in accounts:
             api = DoubanAPI(cfg={
                 'logger': item[0],
-                'persist_file': '__cache__' + item[0] + '.dat',
+                'persist_file': '__cache__' + item[0] + '.json',
             })
             time.sleep(1)
             if not api.user_alias:
@@ -156,8 +159,27 @@ class RelationSpider(object):
     def sleep(self, worker):
         self._workers.append(worker)
 
+    def report(self, alias):
+        if alias not in self._reports_dict:
+            self._reports_dict[alias] = {
+                'count': 1,
+                'alias': alias,
+                'url': API_PEOPLE_HOME % alias,
+            }
+        else:
+            self._reports_dict[alias]['count'] += 1
+
     def has_alias(self, alias):
-        return alias in self._users_dict
+        """
+        判断是否已爬取过用户
+        
+        :type alias: str
+        :param alias: 
+        
+        :rtype: bool
+        :return: 
+        """
+        return alias in self._users_dict or (alias in self._reports_dict and self._reports_dict[alias]['count'] > 2)
 
     def reset_alias(self, alias):
         if alias in self._users_dict:
@@ -198,15 +220,20 @@ class RelationSpider(object):
     def load(self):
         if os.path.isfile(self._persist_file):
             with open(self._persist_file, 'r') as f:
-                self._users_dict = json.load(f) or {}
+                data = json.load(f) or {}
+                self._users_dict = data.get('users_dict', {})
+                self._reports_dict = data.get('reports_dict', {})
 
     def persist(self):
         self._persisting = True
         with open(self._persist_file, 'w+') as f:
             self._api.logger.info('spider persist data, size: %s' % len(self._users_dict))
-            json.dump(self._users_dict, f)
+            json.dump({
+                'users_dict': self._users_dict,
+                'reports_dict': self._reports_dict,
+            }, f, indent=2)
         with open(self._result_file, 'w+') as f:
-            json.dump(self.summary(), f)
+            json.dump(self.summary(), f, indent=2)
         self._persisting = False
 
     def start(self):

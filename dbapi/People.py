@@ -42,6 +42,7 @@ class People(BaseAPI):
             rev_contact_count = int(re.search(r'(\d+)人关注', text_rev_contact_count.strip()).groups()[0])
             return {
                 'alias': user_alias,
+                'url': API_PEOPLE_HOME % user_alias,
                 'avatar': avatar,
                 'city': city,
                 'city_url': city_url,
