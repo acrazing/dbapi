@@ -45,6 +45,7 @@ class DoubanAPI(object):
         logger.setLevel(cfg.get('log_level', api_config['log_level']))
         self.logger = logger
         self.load()  # 初始化时加载会话信息
+        self.flush()
 
     def persist(self):
         """
@@ -109,7 +110,7 @@ class DoubanAPI(object):
         :return: self
         """
         r1 = requests.get(API_ACCOUNT_HOME, headers=self.headers, cookies=self.cookies)
-        if r1.url.find('/accounts/login') > -1:
+        if re.search(r'sec.douban.com|/accounts/login', r1.url) is not None:
             self.logger.info('session expired for <%s>' % self.user_alias)
             self.cookies = {}
             self.user_alias = ''
