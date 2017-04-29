@@ -248,6 +248,7 @@ class RelationSpider(object):
         for alias, user in self._users_dict.items():
             if user['rev_contact_count'] > self._min_rev:
                 results.append(user)
+        results.sort(key=lambda item: item['rev_contact_count'], reverse=True)
         return {'results': results, 'total': total, 'filtered': len(results)}
 
 
