@@ -37,7 +37,7 @@ class People(BaseAPI):
             text_created_at = xml_user.xpath('.//div[@class="pl"]/text()')[1]
             created_at = re.match(r'.+(?=加入)', text_created_at.strip()).group()
             xml_intro = first(xml.xpath('//*[@id="intro_display"]'))
-            html_intro = etree.tostring(xml_intro).decode('utf8') if xml_intro else None
+            html_intro = etree.tostring(xml_intro).decode('utf8') if xml_intro is not None else None
             intro = unescape(html_intro.strip()) if html_intro else None
             nickname = first(xml.xpath('//*[@id="db-usr-profile"]//h1/text()'), '').strip() or None
             signature = first(xml.xpath('//*[@id="display"]/text()'))

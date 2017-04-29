@@ -139,7 +139,7 @@ class RelationSpider(object):
         :rtype: bool
         :return: 
         """
-        if not self.running or self._persisting or not user or user['alias'] in self._users_dict:
+        if self._persisting or not user or user['alias'] in self._users_dict:
             return False
         user['parsed'] = False
         self._users_dict[user['alias']] = user
@@ -153,7 +153,7 @@ class RelationSpider(object):
         return True
 
     def wake_up(self):
-        if self._sleep_workers:
+        if self.running and self._sleep_workers:
             self._sleep_workers.pop(0).start()
 
     def sleep(self, worker):
@@ -211,6 +211,9 @@ class RelationSpider(object):
                 try:
                     user = self._api.people.get_people(alias)
                     self.add_user(user)
+                    if self._users_list[-1] == alias:
+                        self._users_list.pop()
+                        self._users_list.insert(0, alias)
                     time.sleep(2)
                 except Exception as e:
                     self._api.logger.error('spider init user<%s> error: %s' % (alias, e))
@@ -226,14 +229,20 @@ class RelationSpider(object):
 
     def persist(self):
         self._persisting = True
-        with open(self._persist_file, 'w+') as f:
-            self._api.logger.info('spider persist data, size: %s' % len(self._users_dict))
-            json.dump({
-                'users_dict': self._users_dict,
-                'reports_dict': self._reports_dict,
-            }, f, indent=2)
-        with open(self._result_file, 'w+') as f:
-            json.dump(self.summary(), f, indent=2)
+
+        def persist():
+            with open(self._persist_file, 'w+') as f:
+                self._api.logger.info('spider persist data, size: %s' % len(self._users_dict))
+                json.dump({
+                    'users_dict': self._users_dict,
+                    'reports_dict': self._reports_dict,
+                }, f, indent=2)
+            with open(self._result_file, 'w+') as f:
+                json.dump(self.summary(), f, indent=2)
+
+        thread = Thread(target=persist)
+        thread.start()
+        thread.join()
         self._persisting = False
 
     def start(self):
