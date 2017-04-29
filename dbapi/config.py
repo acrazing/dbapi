@@ -12,7 +12,7 @@ import logging
 import sys
 
 api_config = {
-    'persist_file': '__cache__.dat',
+    'persist_file': '__cache__dbapi.json',
     'headers': {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding': 'gzip, deflate, sdch, br',

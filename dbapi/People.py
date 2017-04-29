@@ -39,7 +39,7 @@ class People(BaseAPI):
             xml_contact_count = xml.xpath('//*[@id="friend"]/h2')[0]
             contact_count = int(re.search(r'成员(\d+)', xml_contact_count.xpath('string(.)')).groups()[0])
             text_rev_contact_count = xml.xpath('//p[@class="rev-link"]/a/text()')[0]
-            rev_contact_count = int(re.search(r'\d+', text_rev_contact_count).group())
+            rev_contact_count = int(re.search(r'(\d+)人关注', text_rev_contact_count.strip()).groups()[0])
             return {
                 'alias': user_alias,
                 'avatar': avatar,

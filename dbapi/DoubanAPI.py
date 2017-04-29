@@ -4,9 +4,9 @@
 # License: MIT.
 # Author: acrazing <joking.young@gmail.com>.
 # File: DoubanAPI.
+import json
 import logging
 import os
-import pickle
 import re
 import sys
 import time
@@ -36,8 +36,6 @@ class DoubanAPI(object):
         self.headers = cfg.get('headers', api_config['headers'])
         self.persist_file = cfg.get('persist_file', api_config['persist_file'])
         self.cookies = {}
-        self.username = ''
-        self.password = ''
         self.user_alias = ''
         logger = logging.getLogger(cfg.get('logger', api_config['logger']))
         handler = logging.StreamHandler(cfg.get('log_destination', api_config['log_destination']))
@@ -54,11 +52,9 @@ class DoubanAPI(object):
         
         :return: self
         """
-        with open(self.persist_file, 'wb+') as f:
-            pickle.dump({
+        with open(self.persist_file, 'w+') as f:
+            json.dump({
                 'cookies': self.cookies,
-                'username': self.username,
-                'password': self.password,
                 'user_alias': self.user_alias,
             }, f)
             self.logger.debug('persist session to <%s>' % self.persist_file)
@@ -72,11 +68,9 @@ class DoubanAPI(object):
         """
         if not os.path.isfile(self.persist_file):
             return self
-        with open(self.persist_file, 'rb') as f:
-            cfg = pickle.load(f) or {}
+        with open(self.persist_file, 'r') as f:
+            cfg = json.load(f) or {}
             self.cookies.update(cfg.get('cookies', {}))
-            self.username = cfg.get('username', '')
-            self.password = cfg.get('password', '')
             self.user_alias = cfg.get('user_alias', '')
             self.logger.debug('load session from <%s>' % self.persist_file)
         return self
@@ -102,11 +96,9 @@ class DoubanAPI(object):
         cookies.update(dict(r1.cookies))
         [cookies.update(dict(r.cookies)) for r in r1.history]
         if 'dbcl2' not in cookies:
-            raise Exception('Authorization failed: %s' % r1.url)
+            raise Exception('Authorization failed for <%s>: %s' % (username, r1.url))
         cookies.update(dict(r1.cookies))
-        self.username = username
-        self.password = password
-        self.logger.info('login with username <%s>' % self.username)
+        self.logger.info('login with username <%s>' % username)
         self.use(cookies)
         return self
 
@@ -116,10 +108,13 @@ class DoubanAPI(object):
         
         :return: self
         """
-        r0 = requests.get(API_HOME, headers=self.headers, cookies=self.cookies)
-        self.cookies.update(dict(r0.cookies))
-        time.sleep(1)
         r1 = requests.get(API_ACCOUNT_HOME, headers=self.headers, cookies=self.cookies)
+        if r1.url.find('/accounts/login') > -1:
+            self.logger.info('session expired for <%s>' % self.user_alias)
+            self.cookies = {}
+            self.user_alias = ''
+            self.persist()
+            return self
         self.user_alias = slash_right(r1.url)
         self.cookies.update(dict(r1.cookies))
         self.logger.info('flush with user_alias <%s>' % self.user_alias)

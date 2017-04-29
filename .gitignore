@@ -6,3 +6,4 @@ dist/
 temp/
 build/
 *.egg-info/
+__cache__*
