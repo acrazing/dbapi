@@ -45,7 +45,8 @@ class BaseAPI(object):
         :param data: body
         :return: Response
         """
-        r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers)
+        r = requests.request(method, url, params=params, data=data, cookies=self._cookies, headers=self._headers,
+                             timeout=5)
         self.logger.info('[api] %s: %s' % (method, r.url))
         return r
 

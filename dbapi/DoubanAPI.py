@@ -110,7 +110,7 @@ class DoubanAPI(object):
         :return: self
         """
         r1 = requests.get(API_ACCOUNT_HOME, headers=self.headers, cookies=self.cookies)
-        if re.search(r'sec.douban.com|/accounts/login', r1.url) is not None:
+        if re.search(r'sec\.douban\.com|douban\.com/accounts/login|douban\.com/mine/', r1.url) is not None:
             self.logger.info('session expired for <%s>' % self.user_alias)
             self.cookies = {}
             self.user_alias = ''
