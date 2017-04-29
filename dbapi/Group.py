@@ -16,8 +16,8 @@ from dbapi.BaseAPI import BaseAPI
 from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUPS, API_GROUP_GROUP_HOME, \
     API_GROUP_SEARCH_TOPICS, API_GROUP_HOME, API_GROUP_LIST_GROUP_TOPICS, API_GROUP_LIST_USER_PUBLISHED_TOPICS, \
     API_GROUP_LIST_USER_COMMENTED_TOPICS, API_GROUP_LIST_USER_LIKED_TOPICS, API_GROUP_LIST_USER_RECED_TOPICS, \
-    API_GROUP_ADD_TOPIC, API_GROUP_REMOVE_COMMENT, API_GROUP_GET_TOPIC, API_GROUP_REMOVE_TOPIC, API_GROUP_UPDATE_TOPIC, \
-    API_GROUP_ADD_COMMENT, API_GROUP_ADMIN_REMOVE_COMMENT
+    API_GROUP_ADD_TOPIC, API_GROUP_REMOVE_COMMENT, API_GROUP_GET_TOPIC, \
+    API_GROUP_REMOVE_TOPIC, API_GROUP_UPDATE_TOPIC, API_GROUP_ADD_COMMENT, API_GROUP_ADMIN_REMOVE_COMMENT
 from dbapi.utils import slash_right, build_list_result
 
 
@@ -240,7 +240,7 @@ class Group(BaseAPI):
             'start': start,
             'type': _type,
         })
-        return build_list_result(self._parse_topic_table(xml, 'title,author,comment,updated'))
+        return build_list_result(self._parse_topic_table(xml, 'title,author,comment,updated'), xml)
 
     def list_joined_topics(self, start=0):
         """
