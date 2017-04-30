@@ -35,39 +35,40 @@ class Worker(Thread):
         self.setDaemon(True)
 
     def run(self):
-        if not self._spider.running:
-            return
-        alias = self._spider.next_alias()
-        if not alias:
-            self._spider.sleep(self)
-            return
-        self._api.logger.debug('spider start parse user<%s>' % alias)
-        next_start = 0
-        try:
-            while next_start is not None:
-                contacts = self._api.people.list_contacts(alias, next_start)
-                next_start = contacts['next_start']
-                for item in contacts['results']:
-                    if self._spider.has_alias(item['alias']):
-                        continue
-                    try:
-                        user = self._api.people.get_people(item['alias'])
-                        if not user:
-                            self._spider.report(item['alias'])
-                        elif self._spider.add_user(user):
-                            self._api.logger.debug('add user<%s> contact_count<%s> rev_contact_count<%s>'
-                                                   % (user['alias'], user['contact_count'], user['rev_contact_count']))
-                    except Exception as e:
-                        print(traceback.print_exc())
-                        self._api.logger.error('get user <%s> error: %s' % (item['alias'], e))
-                    time.sleep(2)  # 防验证码
-            self._spider.done_alias(alias)
-            time.sleep(2)
-        except Exception as e:
-            self._api.logger.error('parse user <%s> error: %s' % (alias, e))
-            # 不能在循环中捕获，虽然更高效，但是可能会死循环
-            self._spider.reset_alias(alias)
-        self.run()
+        while True:
+            if not self._spider.running:
+                return
+            alias = self._spider.next_alias()
+            if not alias:
+                self._spider.sleep(self)
+                return
+            self._api.logger.debug('spider start parse user<%s>' % alias)
+            next_start = 0
+            try:
+                while next_start is not None:
+                    contacts = self._api.people.list_contacts(alias, next_start)
+                    next_start = contacts['next_start']
+                    for item in contacts['results']:
+                        if self._spider.has_alias(item['alias']):
+                            continue
+                        try:
+                            user = self._api.people.get_people(item['alias'])
+                            if not user:
+                                self._spider.report_alias(item['alias'])
+                            elif self._spider.add_user(user):
+                                self._api.logger.debug(
+                                    'add user<%s> contact_count<%s> rev_contact_count<%s>'
+                                    % (user['alias'], user['contact_count'], user['rev_contact_count']))
+                        except Exception as e:
+                            print(traceback.print_exc())
+                            self._api.logger.error('get user <%s> error: %s' % (item['alias'], e))
+                        time.sleep(3)  # 防验证码
+                self._spider.done_alias(alias)
+                time.sleep(3)
+            except Exception as e:
+                self._api.logger.error('parse user <%s> error: %s' % (alias, e))
+                # 不能在循环中捕获，虽然更高效，但是可能会死循环
+                self._spider.reset_alias(alias)
 
 
 class RelationSpider(object):
@@ -159,7 +160,7 @@ class RelationSpider(object):
     def sleep(self, worker):
         self._workers.append(worker)
 
-    def report(self, alias):
+    def report_alias(self, alias):
         if alias not in self._reports_dict:
             self._reports_dict[alias] = {
                 'count': 1,
@@ -179,7 +180,7 @@ class RelationSpider(object):
         :rtype: bool
         :return: 
         """
-        return alias in self._users_dict or (alias in self._reports_dict and self._reports_dict[alias]['count'] > 2)
+        return alias in self._users_dict or (alias in self._reports_dict and self._reports_dict[alias]['count'] > 1)
 
     def reset_alias(self, alias):
         if alias in self._users_dict:
@@ -249,7 +250,7 @@ class RelationSpider(object):
         self.running = True
         [worker.start() for worker in self._workers]
         while True:
-            time.sleep(1)
+            time.sleep(3)
 
     def summary(self):
         total = len(self._users_dict)
