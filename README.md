@@ -14,6 +14,7 @@
     # topic_id 可以通过下面这个命令拿到：
     python -m dbapi.DoubanAPI test_api list_commented_topics
     # 这个命令会返回所有自己回复过的帖子
+    ```
 3. 删除自己发的帖子：因为要先删除所有的回复，所以也很恶心
     ```bash
     python -m dbapi.DoubanAPI test_api remove_topic "topic_id"
