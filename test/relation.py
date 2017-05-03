@@ -8,6 +8,7 @@ import atexit
 import gc
 import json
 import logging
+import multiprocessing
 import os
 import sys
 import time
@@ -235,20 +236,19 @@ class RelationSpider(object):
         thread.join()
         self.persisting = False
 
-    def start(self):
+    def start(self, step=1800, limit=1 << 30):
         if len(self.workers) is 0:
             raise Exception('Cannot start spider without worker')
         self.running = True
         [item.start() for item in self.workers]
         ps = psutil.Process(os.getpid())
         while True:
-            time.sleep(1800)  # half hour
+            time.sleep(step)  # half hour
             rss = ps.memory_info().rss
-            if rss > 1 << 25:
-                [item.reload() for item in self.workers]
-                gc.collect()
-                self.logger.warning('memory overflow, before is <%s>, after is <%s>'
-                                    % (mb(rss), mb(ps.memory_info().rss)))
+            if rss > limit:
+                self.stop()
+                self.logger.warning('spider stopped for memory overflow with<%sMb>' % mb(rss))
+                break
 
     def stop(self):
         if not self.running:
@@ -336,8 +336,20 @@ class RelationSpider(object):
 
 
 def test():
-    spider = RelationSpider(**dict([arg.split('=', 1) for arg in argv[1:]]))
-    spider.start()
+    def run():
+        spider = RelationSpider(**dict([arg.split('=', 1) for arg in argv[1:]]))
+        try:
+            spider.start(60, 1 << 30)
+        finally:
+            spider.stop()
+
+    mi = psutil.Process(os.getpid())
+    while True:
+        ps = multiprocessing.Process(target=run)
+        ps.start()
+        ps.join()
+        time.sleep(3)
+        print('WARNING: loop ended, total memory using: %sMb' % mb(mi.memory_info().rss))
 
 
 if __name__ == '__main__':
