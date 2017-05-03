@@ -9,13 +9,13 @@ from html import unescape
 
 from lxml import etree
 
-from dbapi.BaseAPI import BaseAPI
+from dbapi.base import ModuleAPI
 from dbapi.endpoints import API_PEOPLE_HOME, API_PEOPLE_LIST_CONTACTS, API_PEOPLE_LIST_USER_CONTACTS, \
     API_PEOPLE_LIST_REV_CONTACTS, API_PEOPLE_LIST_USER_REV_CONTACTS
 from dbapi.utils import slash_right, build_list_result, first
 
 
-class People(BaseAPI):
+class People(ModuleAPI):
     def get_people(self, user_alias=None):
         """
         获取用户信息
@@ -23,8 +23,8 @@ class People(BaseAPI):
         :param user_alias: 用户ID
         :return: 
         """
-        user_alias = user_alias or self._user_alias
-        xml = self._xml(API_PEOPLE_HOME % user_alias)
+        user_alias = user_alias or self.api.user_alias
+        xml = self.api.xml(API_PEOPLE_HOME % user_alias)
         try:
             xml_user = xml.xpath('//*[@id="profile"]')
             if not xml_user:
@@ -59,12 +59,12 @@ class People(BaseAPI):
                 'rev_contact_count': rev_contact_count,
             }
         except Exception as e:
-            self.logger.exception('parse people meta error: %s' % e)
+            self.api.logger.exception('parse people meta error: %s' % e)
 
     def list_contacts(self, user_alias=None, start=0):
         results = []
         if user_alias is None:
-            xml = self._xml(API_PEOPLE_LIST_CONTACTS, params={'start': start})
+            xml = self.api.xml(API_PEOPLE_LIST_CONTACTS, params={'start': start})
             for item in xml.xpath('//ul[@class="user-list"]/li'):
                 try:
                     avatar = item.xpath('.//img/@src')[0]
@@ -82,9 +82,9 @@ class People(BaseAPI):
                         'signature': signature,
                     })
                 except Exception as e:
-                    self.logger.exception('parse contact error: %s' % e)
+                    self.api.logger.exception('parse contact error: %s' % e)
         else:
-            xml = self._xml(API_PEOPLE_LIST_USER_CONTACTS % user_alias, params={'start': start})
+            xml = self.api.xml(API_PEOPLE_LIST_USER_CONTACTS % user_alias, params={'start': start})
             for item in xml.xpath('//dl[@class="obu"]'):
                 try:
                     avatar = item.xpath('.//img/@src')[0]
@@ -98,13 +98,13 @@ class People(BaseAPI):
                         'alias': alias,
                     })
                 except Exception as e:
-                    self.logger.exception('parse contact error: %s' % e)
+                    self.api.logger.exception('parse contact error: %s' % e)
         return build_list_result(results, xml)
 
     def list_rev_contacts(self, user_alias=None, start=0):
         results = []
         if user_alias is None:
-            xml = self._xml(API_PEOPLE_LIST_REV_CONTACTS, params={'start': start})
+            xml = self.api.xml(API_PEOPLE_LIST_REV_CONTACTS, params={'start': start})
             for item in xml.xpath('//ul[@class="user-list"]/li'):
                 try:
                     avatar = item.xpath('.//img/@src')[0]
@@ -131,9 +131,9 @@ class People(BaseAPI):
                         'rev_contact_count': rev_contact_count,
                     })
                 except Exception as e:
-                    self.logger.exception('parse rev contact list error: %s' % e)
+                    self.api.logger.exception('parse rev contact list error: %s' % e)
         else:
-            xml = self._xml(API_PEOPLE_LIST_USER_REV_CONTACTS % user_alias, params={'start': start})
+            xml = self.api.xml(API_PEOPLE_LIST_USER_REV_CONTACTS % user_alias, params={'start': start})
             for item in xml.xpath('//dl[@class="obu"]'):
                 try:
                     avatar = item.xpath('.//img/@src')[0]
@@ -147,7 +147,7 @@ class People(BaseAPI):
                         'alias': alias,
                     })
                 except Exception as e:
-                    self.logger.exception('parse rev contact list error: %s' % e)
+                    self.api.logger.exception('parse rev contact list error: %s' % e)
         return build_list_result(results, xml)
 
     # 后面的接口先忽略，太多了……

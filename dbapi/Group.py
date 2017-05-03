@@ -12,7 +12,7 @@ from html import unescape
 
 from lxml import etree
 
-from dbapi.BaseAPI import BaseAPI
+from dbapi.base import ModuleAPI
 from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUPS, API_GROUP_GROUP_HOME, \
     API_GROUP_SEARCH_TOPICS, API_GROUP_HOME, API_GROUP_LIST_GROUP_TOPICS, API_GROUP_LIST_USER_PUBLISHED_TOPICS, \
     API_GROUP_LIST_USER_COMMENTED_TOPICS, API_GROUP_LIST_USER_LIKED_TOPICS, API_GROUP_LIST_USER_RECED_TOPICS, \
@@ -21,7 +21,7 @@ from dbapi.endpoints import API_GROUP_SEARCH_GROUPS, API_GROUP_LIST_JOINED_GROUP
 from dbapi.utils import slash_right, build_list_result
 
 
-class Group(BaseAPI):
+class Group(ModuleAPI):
     """
     豆瓣小组客户端
     """
@@ -86,7 +86,7 @@ class Group(BaseAPI):
                         result['rec_id'] = re.search(r'rec_id=(\d+)', xml_rec).groups()[0]
                 results.append(result)
             except Exception as e:
-                self.logger.exception('parse topic table exception: %s' % e)
+                self.api.api.logger.exception('parse topic table exception: %s' % e)
         return results
 
     def add_group(self, **kwargs):
@@ -106,7 +106,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 含总数的列表
         """
-        xml = self._xml(API_GROUP_SEARCH_GROUPS % (start, keyword))
+        xml = self.api.xml(API_GROUP_SEARCH_GROUPS % (start, keyword))
         xml_results = xml.xpath('//div[@class="groups"]/div[@class="result"]')
         results = []
         for item in xml_results:
@@ -125,7 +125,7 @@ class Group(BaseAPI):
                 }
                 results.append(meta)
             except Exception as e:
-                self.logger.exception('parse search groups result error: %s' % e)
+                self.api.logger.exception('parse search groups result error: %s' % e)
         return build_list_result(results, xml)
 
     def list_joined_groups(self, user_alias=None):
@@ -135,7 +135,7 @@ class Group(BaseAPI):
         :param user_alias: 用户名，默认为当前用户名
         :return: 单页列表
         """
-        xml = self._xml(API_GROUP_LIST_JOINED_GROUPS % (user_alias or self._user_alias))
+        xml = self.api.xml(API_GROUP_LIST_JOINED_GROUPS % (user_alias or self.api.user_alias))
         xml_results = xml.xpath('//div[@class="group-list group-cards"]/ul/li')
         results = []
         for item in xml_results:
@@ -154,7 +154,7 @@ class Group(BaseAPI):
                     'user_count': user_count,
                 })
             except Exception as e:
-                self.logger.exception('parse joined groups exception: %s' % e)
+                self.api.logger.exception('parse joined groups exception: %s' % e)
         return build_list_result(results, xml)
 
     def remove_group(self, group_id):
@@ -177,9 +177,9 @@ class Group(BaseAPI):
                 - waiting: 等待审核
                 - initial: 加入失败
         """
-        xml = self._xml(API_GROUP_GROUP_HOME % group_alias, params={
+        xml = self.api.xml(API_GROUP_GROUP_HOME % group_alias, params={
             'action': 'join',
-            'ck': self.ck(),
+            'ck': self.api.ck(),
         })
         misc = xml.xpath('//div[@class="group-misc"]')[0]
         intro = misc.xpath('string(.)') or ''
@@ -188,8 +188,8 @@ class Group(BaseAPI):
         elif intro.find('你已经申请加入小组') > -1:
             return 'waiting'
         elif intro.find('申请加入小组') > -1:
-            res = self._xml(API_GROUP_GROUP_HOME % group_alias, 'post', data={
-                'ck': self.ck(),
+            res = self.api.xml(API_GROUP_GROUP_HOME % group_alias, 'post', data={
+                'ck': self.api.ck(),
                 'action': 'request_join',
                 'message': message,
                 'send': '发送',
@@ -210,9 +210,9 @@ class Group(BaseAPI):
         :param group_alias: 小组ID
         :return: 
         """
-        return self._req(API_GROUP_GROUP_HOME % group_alias, params={
+        return self.api.req(API_GROUP_GROUP_HOME % group_alias, params={
             'action': 'quit',
-            'ck': self.ck(),
+            'ck': self.api.ck(),
         })
 
     def search_topics(self, keyword, sort='relevance', start=0):
@@ -224,7 +224,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带总数的列表
         """
-        xml = self._xml(API_GROUP_SEARCH_TOPICS % (start, sort, keyword))
+        xml = self.api.xml(API_GROUP_SEARCH_TOPICS % (start, sort, keyword))
         return build_list_result(self._parse_topic_table(xml), xml)
 
     def list_topics(self, group_alias, _type='', start=0):
@@ -236,7 +236,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        xml = self._xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, params={
+        xml = self.api.xml(API_GROUP_LIST_GROUP_TOPICS % group_alias, params={
             'start': start,
             'type': _type,
         })
@@ -249,7 +249,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        xml = self._xml(API_GROUP_HOME, params={'start': start})
+        xml = self.api.xml(API_GROUP_HOME, params={'start': start})
         return build_list_result(self._parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     def list_user_topics(self, start=0):
@@ -259,7 +259,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        xml = self._xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % self._user_alias, params={'start': start})
+        xml = self.api.xml(API_GROUP_LIST_USER_PUBLISHED_TOPICS % self.api.user_alias, params={'start': start})
         return build_list_result(self._parse_topic_table(xml, 'title,comment,created,group'), xml)
 
     def list_commented_topics(self, start=0):
@@ -269,7 +269,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        xml = self._xml(API_GROUP_LIST_USER_COMMENTED_TOPICS % self._user_alias, params={'start': start})
+        xml = self.api.xml(API_GROUP_LIST_USER_COMMENTED_TOPICS % self.api.user_alias, params={'start': start})
         return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_liked_topics(self, user_alias=None, start=0):
@@ -280,8 +280,8 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        user_alias = user_alias or self._user_alias
-        xml = self._xml(API_GROUP_LIST_USER_LIKED_TOPICS % user_alias, params={'start': start})
+        user_alias = user_alias or self.api.user_alias
+        xml = self.api.xml(API_GROUP_LIST_USER_LIKED_TOPICS % user_alias, params={'start': start})
         return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group'), xml)
 
     def list_reced_topics(self, user_alias=None, start=0):
@@ -292,8 +292,8 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        user_alias = user_alias or self._user_alias
-        xml = self._xml(API_GROUP_LIST_USER_RECED_TOPICS % user_alias, params={'start': start})
+        user_alias = user_alias or self.api.user_alias
+        xml = self.api.xml(API_GROUP_LIST_USER_RECED_TOPICS % user_alias, params={'start': start})
         return build_list_result(self._parse_topic_table(xml, 'title,comment,time,group,rec'), xml)
 
     def add_topic(self, group_alias, title, content):
@@ -305,8 +305,8 @@ class Group(BaseAPI):
         :param content: 内容
         :return: bool
         """
-        xml = self._req(API_GROUP_ADD_TOPIC % group_alias, 'post', data={
-            'ck': self.ck(),
+        xml = self.api.req(API_GROUP_ADD_TOPIC % group_alias, 'post', data={
+            'ck': self.api.ck(),
             'rev_title': title,
             'rev_text': content,
             'rev_submit': '好了，发言',
@@ -326,7 +326,7 @@ class Group(BaseAPI):
             for comment in comments['results']:
                 self.remove_comment(topic_id, comment['id'])
             comment_start = comments['next_start']
-        return self._req(API_GROUP_REMOVE_TOPIC % topic_id, params={'ck': self.ck()})
+        return self.api.req(API_GROUP_REMOVE_TOPIC % topic_id, params={'ck': self.api.ck()})
 
     def update_topic(self, topic_id, title, content):
         """
@@ -337,8 +337,8 @@ class Group(BaseAPI):
         :param content: 内容
         :return: bool
         """
-        xml = self._req(API_GROUP_UPDATE_TOPIC % topic_id, 'post', data={
-            'ck': self.ck(),
+        xml = self.api.req(API_GROUP_UPDATE_TOPIC % topic_id, 'post', data={
+            'ck': self.api.ck(),
             'rev_title': title,
             'rev_text': content,
             'rev_submit': '好了，改吧',
@@ -389,7 +389,7 @@ class Group(BaseAPI):
         :param start: 翻页
         :return: 带下一页的列表
         """
-        xml = self._xml(API_GROUP_GET_TOPIC % topic_id, params={'start': start})
+        xml = self.api.xml(API_GROUP_GET_TOPIC % topic_id, params={'start': start})
         xml_results = xml.xpath('//ul[@id="comments"]/li')
         results = []
         for item in xml_results:
@@ -413,7 +413,7 @@ class Group(BaseAPI):
                     'content': unescape(content),
                 })
             except Exception as e:
-                self.logger.exception('parse comment exception: %s' % e)
+                self.api.logger.exception('parse comment exception: %s' % e)
         return build_list_result(results, xml)
 
     def add_comment(self, topic_id, content, reply_id=None):
@@ -425,8 +425,8 @@ class Group(BaseAPI):
         :param reply_id: 回复ID
         :return: None
         """
-        return self._req(API_GROUP_ADD_COMMENT % topic_id, 'post', data={
-            'ck': self.ck(),
+        return self.api.req(API_GROUP_ADD_COMMENT % topic_id, 'post', data={
+            'ck': self.api.ck(),
             'ref_cid': reply_id,
             'rv_comment': content,
             'start': 0,
@@ -444,11 +444,11 @@ class Group(BaseAPI):
         :return: None
         """
         params = {'cid': comment_id}
-        data = {'cid': comment_id, 'ck': self.ck(), 'reason': reason, 'other': other, 'submit': '确定'}
-        r = self._req(API_GROUP_REMOVE_COMMENT % topic_id, 'post', params, data)
+        data = {'cid': comment_id, 'ck': self.api.ck(), 'reason': reason, 'other': other, 'submit': '确定'}
+        r = self.api.req(API_GROUP_REMOVE_COMMENT % topic_id, 'post', params, data)
         if r.text.find('douban_admin') > -1:
-            r = self._req(API_GROUP_ADMIN_REMOVE_COMMENT % topic_id, 'post', params, data)
-        self.logger.debug('remove comment final url is <%s>' % r.url)
+            r = self.api.req(API_GROUP_ADMIN_REMOVE_COMMENT % topic_id, 'post', params, data)
+        self.api.logger.debug('remove comment final url is <%s>' % r.url)
         return r
 
     def list_user_comments(self, topic_id, user_alias=None):
@@ -459,7 +459,7 @@ class Group(BaseAPI):
         :param user_alias: 用户ID，默认当前
         :return: 纯列表
         """
-        user_alias = user_alias or self._user_alias
+        user_alias = user_alias or self.api.user_alias
         comment_start = 0
         results = []
         while comment_start is not None:
