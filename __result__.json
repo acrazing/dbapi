@@ -4744,7 +4744,7 @@
       "signature": null,
       "contact_count": 104,
       "rev_contact_count": 26315,
-      "parsed": false
+      "parsed": true
     },
     {
       "alias": "Suxyue",
@@ -6228,7 +6228,7 @@
       "signature": "\u5728\u4e1c\u4eac\u9633\u5149\u707f\u70c2\u7684\u65e5\u5b50\u91cc",
       "contact_count": 43,
       "rev_contact_count": 21236,
-      "parsed": false
+      "parsed": true
     },
     {
       "alias": "pushusep",
@@ -14838,7 +14838,7 @@
       "signature": "\u4e0d\u61c2\u70b9\u5fc3\u7406  \u5fae\u4fe1ID\uff1abddpsy",
       "contact_count": 4,
       "rev_contact_count": 10100,
-      "parsed": false
+      "parsed": true
     },
     {
       "alias": "dakew",
@@ -14981,6 +14981,6 @@
       "url": "https://www.douban.com/people/1712907/"
     }
   ],
-  "total": 34285,
+  "total": 34318,
   "filtered": 1070
 }
