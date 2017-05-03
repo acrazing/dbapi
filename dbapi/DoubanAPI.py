@@ -28,13 +28,12 @@ def default(data):
         return data.toJSON()
     except:
         try:
-            return data.__dict__
+            return data.__repr__()
         except:
             try:
                 return data.__class__.__name__
             except:
                 return '__UNKNOWN__'
-
 
 
 def test_api(argv):

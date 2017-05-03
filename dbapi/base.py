@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import time
+from codecs import BOM_UTF8
 
 import requests
 from lxml import html
@@ -145,7 +146,8 @@ class BaseAPI(object):
         :return: 
         """
         r = self.req(url, method, params, data)
-        return html.fromstring(r.text, r.url)
+        # this is required for avoid utf8-mb4 lead to encoding error
+        return html.fromstring(html=r.content, base_url=r.url, parser=html.HTMLParser(encoding='utf-8'))
 
     def persist(self):
         """
@@ -168,7 +170,7 @@ class BaseAPI(object):
             cfg = json.load(f) or {}
             self.cookies = cfg.get('cookies', {})
             self.user_alias = cfg.get('user_alias') or None
-            self.logger.debug('load session from <%s>' % self.persist_file)
+            self.logger.debug('load session for <%s> from <%s>' % (self.user_alias, self.persist_file))
 
     def expire(self):
         if self.user_alias is None:
