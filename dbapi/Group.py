@@ -313,6 +313,33 @@ class Group(ModuleAPI):
         })
         return not xml.url.startswith(API_GROUP_ADD_TOPIC % group_alias)
 
+    def get_topic(self, topic_id):
+        xml = self.api.xml(API_GROUP_GET_TOPIC % topic_id)
+        txt_title = xml.xpath('//div[@id="content"]/h1/text()')[0].strip()
+        txt_content = xml.xpath('//div[@class="topic-content"]')[0].xpath('string()').strip()
+        txt_author_avatar = xml.xpath('//img[@class="pil"]/@src')[0]
+        xml_from = xml.xpath('//div[@class="topic-doc"]//span[@class="from"]/a')[0]
+        txt_created_at = xml.xpath('//div[@class="topic-doc"]//span[@class="color-green"]/text()')[0]
+        xml_group = xml.xpath('//div[@id="g-side-info-member"]')[0]
+        txt_group_avatar = xml_group.xpath('.//img/@src')[0]
+        xml_group_title = xml_group.xpath('.//div[@class="title"]/a')[0]
+        txt_author_url = xml_from.get('href')
+        txt_group_url = xml_group_title.get('href').split('?', 1)[0]
+        return {
+            'id': topic_id,
+            'title': txt_title,
+            'content': txt_content,
+            'created_at': txt_created_at,
+            'author_avatar': txt_author_avatar,
+            'author_nickname': xml_from.text,
+            'author_alias': slash_right(txt_author_url),
+            'author_url': txt_author_url,
+            'group_icon': txt_group_avatar,
+            'group_name': xml_group.xpath('.//div[@class="title"]/a/text()')[0],
+            'group_alias': slash_right(txt_group_url),
+            'group_url': txt_group_url,
+        }
+
     def remove_topic(self, topic_id):
         """
         删除话题（需要先删除所有评论，使用默认参数）
@@ -397,7 +424,7 @@ class Group(ModuleAPI):
                 author_avatar = item.xpath('.//img/@src')[0]
                 author_url = item.xpath('.//div[@class="user-face"]/a/@href')[0]
                 author_alias = slash_right(author_url)
-                author_intro = item.xpath('.//h4/text()')[1].strip()
+                author_signature = item.xpath('.//h4/text()')[1].strip()
                 author_nickname = item.xpath('.//h4/a/text()')[0].strip()
                 created_at = item.xpath('.//h4/span/text()')[0].strip()
                 content = etree.tostring(item.xpath('.//div[@class="reply-doc content"]/p')[0]).decode('utf8').strip()
@@ -407,7 +434,7 @@ class Group(ModuleAPI):
                     'author_avatar': author_avatar,
                     'author_url': author_url,
                     'author_alias': author_alias,
-                    'author_intro': author_intro,
+                    'author_signature': author_signature,
                     'author_nickname': author_nickname,
                     'created_at': created_at,
                     'content': unescape(content),

@@ -24,7 +24,8 @@ class People(ModuleAPI):
         :return: 
         """
         user_alias = user_alias or self.api.user_alias
-        xml = self.api.xml(API_PEOPLE_HOME % user_alias)
+        content = self.api.req(API_PEOPLE_HOME % user_alias).content
+        xml = self.api.to_xml(re.sub(b'<br />', b'\n', content))
         try:
             xml_user = xml.xpath('//*[@id="profile"]')
             if not xml_user:
@@ -37,8 +38,7 @@ class People(ModuleAPI):
             text_created_at = xml_user.xpath('.//div[@class="pl"]/text()')[1]
             created_at = re.match(r'.+(?=加入)', text_created_at.strip()).group()
             xml_intro = first(xml.xpath('//*[@id="intro_display"]'))
-            html_intro = etree.tostring(xml_intro).decode('utf8') if xml_intro is not None else None
-            intro = unescape(html_intro.strip()) if html_intro else None
+            intro = xml_intro.xpath('string(.)') if xml_intro is not None else None
             nickname = first(xml.xpath('//*[@id="db-usr-profile"]//h1/text()'), '').strip() or None
             signature = first(xml.xpath('//*[@id="display"]/text()'))
             xml_contact_count = xml.xpath('//*[@id="friend"]/h2')[0]

@@ -26,8 +26,9 @@ class BaseAPI(object):
     客户端入口类，提供各个模块接口及身份验证
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, flush=True, **kwargs):
         """
+        :param flush:
         :param kwargs: 客户端配置
                 persist_file: 用于持久化保存会话信息的文件
                 headers: HTTP请求的公共头信息
@@ -66,7 +67,7 @@ class BaseAPI(object):
         """:type: logging.Logger"""
 
         self.load()  # 初始化时加载会话信息
-        self.flush()
+        flush is True and self.flush()
 
     def req(self, url, method='get', params=None, data=None, auth=False):
         """
@@ -90,6 +91,7 @@ class BaseAPI(object):
         :rtype: requests.Response
         :return: Response
         """
+        self.logger.debug('fetch api<%s:%s>' % (method, url))
         if auth and self.user_alias is None:
             raise Exception('cannot fetch api<%s> without session' % url)
         s = requests.Session()
@@ -100,7 +102,6 @@ class BaseAPI(object):
             self.expire()
             if auth:
                 raise Exception('auth expired, could not fetch with<%s>' % url)
-        self.logger.debug('fetch api<%s:%s>' % (method, r.url))
         return r
 
     def json(self, url, method='get', params=None, data=None):
@@ -126,6 +127,10 @@ class BaseAPI(object):
         r = self.req(url, method, params, data)
         return r.json()
 
+    @staticmethod
+    def to_xml(content, **kwargs):
+        return html.fromstring(html=content, parser=html.HTMLParser(encoding='utf-8'), **kwargs)
+
     def xml(self, url, method='get', params=None, data=None):
         """
         请求并返回xml
@@ -147,7 +152,7 @@ class BaseAPI(object):
         """
         r = self.req(url, method, params, data)
         # this is required for avoid utf8-mb4 lead to encoding error
-        return html.fromstring(html=r.content, base_url=r.url, parser=html.HTMLParser(encoding='utf-8'))
+        return self.to_xml(r.content, base_url=r.url)
 
     def persist(self):
         """

@@ -13,8 +13,8 @@ from dbapi.base import BaseAPI
 
 
 class DoubanAPI(BaseAPI):
-    def __init__(self, **kwargs):
-        super(DoubanAPI, self).__init__(**kwargs)
+    def __init__(self, flush=True, **kwargs):
+        super(DoubanAPI, self).__init__(flush=flush, **kwargs)
 
         self.group = Group(self)
         """:type: Group"""

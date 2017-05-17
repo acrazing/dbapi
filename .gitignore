@@ -7,3 +7,4 @@ temp/
 build/
 *.egg-info/
 __cache__*
+node_modules/
