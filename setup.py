@@ -14,7 +14,7 @@ with open('./requirements.txt') as f:
 
 setup(
     name='dbapi',
-    version='0.0.9',
+    version='0.0.10',
     description='基于爬虫的豆瓣API SDK',
     url='https://github.com/acrazing/dbapi',
     author='acrazing',
@@ -24,4 +24,7 @@ setup(
     long_description=desc,
     install_requires=requires,
     packages=['dbapi'],
+    entry_points={
+        'console_scripts': ['dbapi=dbapi.cli:main'],
+    },
 )

@@ -5,9 +5,6 @@
 # Author: acrazing <joking.young@gmail.com>.
 # File: People.
 import re
-from html import unescape
-
-from lxml import etree
 
 from dbapi.base import ModuleAPI
 from dbapi.endpoints import API_PEOPLE_HOME, API_PEOPLE_LIST_CONTACTS, API_PEOPLE_LIST_USER_CONTACTS, \

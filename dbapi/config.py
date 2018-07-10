@@ -9,10 +9,11 @@
 """
 
 import logging
+import os
 import sys
 
 api_config = {
-    'persist_file': '__cache__dbapi.json',
+    'persist_file': os.path.join(os.path.expanduser("~"), ".__cache__dbapi.json"),
     'headers': {
         'Accept-Encoding': 'gzip, deflate, sdch, br',
         'Accept-Language': 'zh,zh-CN;q=0.8,zh-TW;q=0.6,en;q=0.4,en-US;q=0.2',

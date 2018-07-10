@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import time
-from codecs import BOM_UTF8
 
 import requests
 from lxml import html
