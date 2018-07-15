@@ -64,7 +64,7 @@ def show_help(api, error):
 
 
 def main():
-    api = DoubanAPI()
+    api = DoubanAPI(flush=False)
     if len(sys.argv) < 2 or sys.argv.count("--help") > 0 or sys.argv.count("-h") > 0:
         show_help(api, None)
         return
