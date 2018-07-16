@@ -14,7 +14,7 @@ with open('./requirements.txt') as f:
 
 setup(
     name='dbapi',
-    version='0.0.12',
+    version='0.0.13',
     description='基于爬虫的豆瓣API SDK',
     url='https://github.com/acrazing/dbapi',
     author='acrazing',

@@ -44,7 +44,7 @@ def show_help(api, error):
     lines.append("    " + sys.argv[0] + " <module> <api> [options...]\n")
     lines.append("Available API:")
 
-    for k in sorted(dir(api), key=lambda x: (isinstance(getattr(api, x), ModuleAPI), x)):
+    for k in sorted(dir(api), key=lambda x: (isinstance(getattr(api, x, None), ModuleAPI), x)):
         if k.startswith("_"):
             continue
         attr = getattr(api, k, None)
@@ -68,13 +68,13 @@ def main():
     if len(sys.argv) < 2 or sys.argv.count("--help") > 0 or sys.argv.count("-h") > 0:
         show_help(api, None)
         return
-    method = getattr(api, sys.argv[1])
+    method = getattr(api, sys.argv[1], None)
     args = sys.argv[2:]
     if isinstance(method, ModuleAPI):
         if len(sys.argv) < 3:
             show_help(api, "Please specify the API")
             return
-        method = getattr(method, sys.argv[2])
+        method = getattr(method, sys.argv[2], None)
         args = sys.argv[3:]
     if not callable(method):
         show_help(api, "Specified API is not a valid function")
