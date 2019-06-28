@@ -15,7 +15,7 @@ import sys
 api_config = {
     'persist_file': os.path.join(os.path.expanduser("~"), ".__cache__dbapi.json"),
     'headers': {
-        'Accept-Encoding': 'gzip, deflate, sdch, br',
+        'Accept-Encoding': 'gzip, deflate',
         'Accept-Language': 'zh,zh-CN;q=0.8,zh-TW;q=0.6,en;q=0.4,en-US;q=0.2',
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/538.36 (KHTML, like Gecko) '
