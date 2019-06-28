@@ -22,6 +22,7 @@ setup(
     license='MIT',
     keywords='豆瓣 douban 豆瓣小组 api',
     long_description=desc,
+    long_description_content_type='text/markdown',
     install_requires=requires,
     packages=['dbapi'],
     entry_points={
