@@ -8,6 +8,18 @@
 pip3 install dbapi
 ```
 
+## ~/.__cache__dbapi.json 的样子
+
+‘’‘
+{
+  "cookies": {
+    "ck": "BNHL",
+    "dbcl2": "\"181790772:0Y3jcLXIRlo\""
+  },
+  "user_alias": null
+}
+’‘’
+
 ## 使用
 
 ```bash
